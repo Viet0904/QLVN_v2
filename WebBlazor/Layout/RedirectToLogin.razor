@@ -1,0 +1,10 @@
+﻿@using Microsoft.AspNetCore.Components
+@inject NavigationManager NavigationManager
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Chuyển hướng người dùng về trang login
+        NavigationManager.NavigateTo("login");
+    }
+}

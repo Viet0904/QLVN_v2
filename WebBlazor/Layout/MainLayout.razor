@@ -1,0 +1,105 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Web
+@inject IJSRuntime JS
+@inject QLVN_Blazor.Services.ThemeService ThemeService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+<div id="pcoded" class="pcoded">
+    <div class="pcoded-overlay-box"></div>
+    <div class="pcoded-container navbar-wrapper">
+        <TopBar />
+        <div class="pcoded-main-container">
+            <div class="pcoded-wrapper">
+                <NavMenu />
+                <div class="pcoded-content">
+                    <div class="pcoded-inner-content">
+                        <div class="main-body">
+                            <div class="page-wrapper">
+                                <div class="page-body">
+                                    @Body
+                                </div>
+
+                                
+                               
+                              
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+            </div>
+
+        </div>
+    </div>
+    <SettingTheme />
+</div>
+
+@code {
+    // Theme loading được xử lý bởi SettingTheme component
+    // Để tránh conflict, MainLayout không load theme nữa
+    
+    // NOTE: Nếu cần load theme trước khi SettingTheme render,
+    // có thể uncomment code bên dưới, nhưng phải đảm bảo
+    // không conflict với SettingTheme.OnAfterRenderAsync()
+    
+    /*
+    private bool isThemeLoaded = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isThemeLoaded)
+        {
+            try
+            {
+                await Task.Delay(300);
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+
+                if (user.Identity?.IsAuthenticated == true)
+                {
+                    await LoadUserTheme();
+                }
+                else
+                {
+                    await ApplyDefaultTheme();
+                }
+
+                isThemeLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading theme in MainLayout: {ex.Message}");
+                await ApplyDefaultTheme();
+            }
+        }
+    }
+
+    private async Task LoadUserTheme()
+    {
+        try
+        {
+            var settings = await ThemeService.GetThemeAsync();
+            await JS.InvokeVoidAsync("themeInterop.applyFullTheme", settings);
+            Console.WriteLine("User theme loaded successfully from MainLayout");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user theme: {ex.Message}");
+            await ApplyDefaultTheme();
+        }
+    }
+
+    private async Task ApplyDefaultTheme()
+    {
+        try
+        {
+            var defaultSettings = new QLVN_Contracts.Dtos.Theme.ThemeSettings();
+            await JS.InvokeVoidAsync("themeInterop.applyFullTheme", defaultSettings);
+            Console.WriteLine("Default theme applied from MainLayout");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error applying default theme: {ex.Message}");
+        }
+    }
+    */
+}

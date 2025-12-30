@@ -1,0 +1,175 @@
+﻿@page "/login"
+@layout LoginLayout
+@using Common.Model.Auth
+@using QLVN_Blazor.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@attribute [AllowAnonymous]
+
+<style>
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        border-width: 0.2em;
+    }
+    
+    .btn-loading {
+        pointer-events: none;
+    }
+</style>
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="text-center" style="margin-top: 150px;">
+                <img src="images/logo.png" alt="logo.png" style="margin-bottom: 30px;">
+            </div>
+
+            <div id="notification-container" style="max-width: 600px; margin: 0 auto; min-height: 60px;"></div>
+
+            @if (!isLoading)
+            {
+                <EditForm Model="loginRequest" OnValidSubmit="HandleLogin" class="md-float-material form-material" style="max-width: 600px; margin: 30px auto;">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="auth-box card">
+                        <div class="card-block">
+                            <div class="row m-b-20">
+                                <div class="col-md-12">
+                                    <h3 class="text-center">Đăng Nhập</h3>
+                                </div>
+                            </div>
+
+                            @* @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger text-center">
+                                    @errorMessage
+                                </div>
+                            } *@
+
+                            <div class="form-group form-primary">
+                                <InputText @bind-Value="loginRequest.UserName" class="form-control" placeholder="Tài khoản" />
+                                <ValidationMessage For="@(() => loginRequest.UserName)" class="text-danger" />
+                                <span class="form-bar"></span>
+                            </div>
+                            
+                            <div class="form-group form-primary">
+                                <InputText type="password" @bind-Value="loginRequest.Password" class="form-control" placeholder="Mật khẩu" />
+                                <ValidationMessage For="@(() => loginRequest.Password)" class="text-danger" />
+                                <span class="form-bar"></span>
+                            </div>
+
+                            <div class="row m-t-25 text-left">
+                                <div class="col-12">
+                                    <div class="checkbox-fade fade-in-primary d-">
+                                        <label>
+                                            <input type="checkbox" value="">
+                                            <span class="cr"><i class="cr-icon icofont icofont-ui-check txt-primary"></i></span>
+                                            <span class="text-inverse">Ghi nhớ đăng nhập</span>
+                                        </label>
+                                    </div>
+                                    <div class="forgot-phone text-right f-right">
+                                        <a href="auth-reset-password.htm" class="text-right f-w-600"> Quên mật khẩu?</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row m-t-30">
+                                <div class="col-md-12">
+                                    <button type="submit" class="btn btn-primary btn-md btn-block text-center m-b-20">
+                                        Đăng nhập
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="row">
+                                <div class="col-md-10">
+                                    <p class="text-inverse text-left m-b-0">Cảm ơn bạn.</p>
+                                    <p class="text-inverse text-left"><a href="/"><b class="f-w-600">Về trang chủ</b></a></p>
+                                </div>
+                                <div class="col-md-2">
+                                    <img src="images/Logo-small-bottom.png" alt="small-logo.png">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+            }
+            else
+            {
+                <div style="text-align: center; margin-top: 100px;">
+                    <div class="spinner-border" style="width: 3rem; height: 3rem; color: #1abc9c;" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p style="margin-top: 20px; font-size: 18px; color: #666;">Đang xử lý đăng nhập...</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginRequest = new LoginRequest();
+    private string? errorMessage;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Kiểm tra xem người dùng đã đăng nhập hay chưa
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated ?? false)
+        {
+            // Nếu đã đăng nhập => redirect về trang chủ
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await AuthService.Login(loginRequest);
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Đăng nhập thất bại: " + ex.Message;
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await Task.Delay(700);
+                // await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/jquery.min.js");
+                // await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
+                // await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
+
+                // Hàm Notification
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/notificationManager.js')");
+
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+                
+                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Dashboard Script Load Error: {ex.Message}");
+            }
+        }
+    }
+}

@@ -1,0 +1,40 @@
+﻿/* Scroll mượt với thanh scroll cùng màu NavMenu */
+.nav-scrollable {
+    /* Chiều cao mặc định khi header fixed */
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    /* Firefox - scrollbar cùng màu với NavMenu */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Điều chỉnh chiều cao khi header là relative (không fixed) */
+.pcoded-navbar[pcoded-header-position="relative"] .nav-scrollable {
+    height: calc(100vh - 56px);
+}
+
+/* Chrome, Safari, Edge - scrollbar cùng màu với NavMenu */
+.nav-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.nav-scrollable::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.nav-scrollable::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.nav-scrollable::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* IE/Edge cũ */
+.nav-scrollable {
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+

@@ -1,0 +1,454 @@
+﻿@inject IJSRuntime JS
+@inject QLVN_Blazor.Services.ThemeService ThemeService
+@inject QLVN_Blazor.Services.NotificationService NotificationService
+<div id="styleSelector">
+
+    <!-- Toggle -->
+    <div class="selector-toggle">
+        <a href="javascript:void(0)"></a>
+    </div>
+
+    <!-- Header -->
+    <ul>
+        <li>
+            <p class="selector-title main-title st-main-title">
+                <b>Adminty</b> Customizer
+            </p>
+            <span class="text-muted">
+                Live customizer with tons of options
+            </span>
+        </li>
+
+        <li>
+            <p class="selector-title">Main layouts</p>
+        </li>
+
+        <li>
+            <div class="theme-color">
+                <a href="#" class="navbar-theme" navbar-theme="themelight1">
+                    <span class="head"></span>
+                    <span class="cont"></span>
+                </a>
+                <a href="#" class="navbar-theme" navbar-theme="theme1">
+                    <span class="head"></span>
+                    <span class="cont"></span>
+                </a>
+            </div>
+        </li>
+    </ul>
+
+    <!-- Content -->
+    <div class="style-cont m-t-10">
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#sel-layout">
+                    Layouts
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#sel-sidebar-setting">
+                    Sidebar Settings
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content tabs">
+
+            <!-- Layout Tab -->
+            <div class="tab-pane active" id="sel-layout">
+                <ul>
+                    <li class="theme-option">
+                        <div class="checkbox-fade fade-in-primary">
+                            <label>
+                                <input type="checkbox"
+                                       @bind="FixedSidebar"
+                                       @bind:after="OnFixedSidebarChanged" />
+
+
+
+
+                                <span class="cr">
+                                    <i class="cr-icon feather icon-check txt-success f-w-600"></i>
+                                </span>
+                                <span>Fixed Sidebar Position</span>
+                            </label>
+                        </div>
+                    </li>
+
+                    <li class="theme-option">
+                        <div class="checkbox-fade fade-in-primary">
+                            <label>
+                                <input type="checkbox"
+                                       @bind="FixedHeader"
+                                       @bind:after="OnFixedHeaderChanged"
+                                       id="header-position" />
+                                <span class="cr">
+                                    <i class="cr-icon feather icon-check txt-success f-w-600"></i>
+                                </span>
+                                <span>Fixed Header Position</span>
+                            </label>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Sidebar Settings Tab -->
+            <div class="tab-pane" id="sel-sidebar-setting">
+                <ul>
+
+                    <!-- Menu Type -->
+                    <li class="theme-option">
+                        <p class="sub-title drp-title">Menu Type</p>
+                        <div class="form-radio" id="menu-effect">
+                            <div class="radio radio-inverse radio-inline">
+                                <label>
+                                    <input type="radio"
+                                           name="menuType"
+                                           value="st6"
+                                           checked="@(MenuType == "st6")"
+                                           @onchange="OnMenuTypeChanged" />
+                                    <span>Simple Icon</span>
+                                    <i class="helper"></i>
+                                    <span class="micon st6">
+                                        <i class="feather icon-command"></i>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="radio radio-primary radio-inline">
+                                <label>
+                                    <input type="radio"
+                                           name="menuType"
+                                           value="st5"
+                                           checked="@(MenuType == "st5")"
+                                           @onchange="OnMenuTypeChanged" />
+                                    <span>Color Icon</span>
+                                    <i class="helper"></i>
+                                    <span class="micon st5">
+                                        <i class="feather icon-command"></i>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Sidebar Effect -->
+                    <li class="theme-option">
+                        <p class="sub-title drp-title">SideBar Effect</p>
+                        <select id="vertical-menu-effect" class="form-control minimal">
+                            <option value="shrink">Shrink</option>
+                            <option value="overlay">Overlay</option>
+                            <option value="push">Push</option>
+                        </select>
+                    </li>
+
+                    <!-- Border -->
+                    <li class="theme-option">
+                        <p class="sub-title drp-title">Hide/Show Border</p>
+                        <select id="vertical-border-style" class="form-control minimal">
+                            <option value="solid">Style 1</option>
+                            <option value="dotted">Style 2</option>
+                            <option value="dashed">Style 3</option>
+                            <option value="none">No Border</option>
+                        </select>
+                    </li>
+
+                    <!-- Dropdown Icon -->
+                    <li class="theme-option">
+                        <p class="sub-title drp-title">Drop-Down Icon</p>
+                        <select id="vertical-dropdown-icon" class="form-control minimal">
+                            <option value="style1">Style 1</option>
+                            <option value="style2">Style 2</option>
+                            <option value="style3">Style 3</option>
+                        </select>
+                    </li>
+
+                    <!-- Submenu Icon -->
+                    <li class="theme-option">
+                        <p class="sub-title drp-title">Sub Menu Drop-down Icon</p>
+                        <select id="vertical-subitem-icon" class="form-control minimal">
+                            <option value="style1">Style 1</option>
+                            <option value="style2">Style 2</option>
+                            <option value="style3">Style 3</option>
+                            <option value="style4">Style 4</option>
+                            <option value="style5">Style 5</option>
+                            <option value="style6">Style 6</option>
+                        </select>
+                    </li>
+
+                </ul>
+            </div>
+
+            <!-- Colors -->
+            <ul>
+
+                <li>
+                    <p class="selector-title">Header Brand color</p>
+                </li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        <a href="#" class="logo-theme" logo-theme="theme1"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="logo-theme" logo-theme="theme2"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="logo-theme" logo-theme="theme3"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="logo-theme" logo-theme="theme4"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="logo-theme" logo-theme="theme5"><span class="head"></span><span class="cont"></span></a>
+                    </div>
+                </li>
+
+                <li>
+                    <p class="selector-title">Header color</p>
+                </li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        <a href="#" class="header-theme" header-theme="theme1"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="header-theme" header-theme="theme2"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="header-theme" header-theme="theme3"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="header-theme" header-theme="theme4"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="header-theme" header-theme="theme5"><span class="head"></span><span class="cont"></span></a>
+                        <a href="#" class="header-theme" header-theme="theme6"><span class="head"></span><span class="cont"></span></a>
+                    </div>
+                </li>
+
+                <li>
+                    <p class="selector-title">Active link color</p>
+                </li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        <a href="#" class="active-item-theme small" active-item-theme="theme1">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme2">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme3">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme4">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme5">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme6">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme7">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme8">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme9">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme10">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme11">&nbsp;</a>
+                        <a href="#" class="active-item-theme small" active-item-theme="theme12">&nbsp;</a>
+                    </div>
+                </li>
+
+                <li>
+                    <p class="selector-title">Menu Caption Color</p>
+                </li>
+                <li class="theme-option">
+                    <div class="theme-color">
+                        <a href="#" class="leftheader-theme small" lheader-theme="theme1">&nbsp;</a>
+                        <a href="#" class="leftheader-theme small" lheader-theme="theme2">&nbsp;</a>
+                        <a href="#" class="leftheader-theme small" lheader-theme="theme3">&nbsp;</a>
+                        <a href="#" class="leftheader-theme small" lheader-theme="theme4">&nbsp;</a>
+                        <a href="#" class="leftheader-theme small" lheader-theme="theme5">&nbsp;</a>
+                        <a href="#" class="leftheader-theme small" lheader-theme="theme6">&nbsp;</a>
+                    </div>
+                </li>
+
+            </ul>
+
+        </div>
+    </div>
+
+    <!-- Footer - Save/Reset Buttons -->
+    <ul>
+        <li class="text-center m-t-20">
+            <button @onclick="SaveThemeSettings" 
+                    class="btn btn-success btn-block m-b-10"
+                    disabled="@isSaving">
+                @if (isSaving)
+                {
+                    <i class="feather icon-loader"></i>
+                    <span>Đang lưu...</span>
+                }
+                else
+                {
+                    <i class="feather icon-save"></i>
+                    <span>Lưu cấu hình</span>
+                }
+            </button>
+        </li>
+        
+        <li class="text-center">
+            <button @onclick="ResetThemeSettings" 
+                    class="btn btn-warning btn-block m-b-20"
+                    disabled="@isResetting">
+                @if (isResetting)
+                {
+                    <i class="feather icon-loader"></i>
+                    <span>Đang reset...</span>
+                }
+                else
+                {
+                    <i class="feather icon-refresh-cw"></i>
+                    <span>Reset về mặc định</span>
+                }
+            </button>
+        </li>
+    </ul>
+
+</div>
+
+
+@code {
+    bool FixedSidebar = true;
+    bool FixedHeader = true;
+    string MenuType = "st6";
+    
+    bool isSaving = false;
+    bool isResetting = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Đợi lâu hơn để đảm bảo jQuery và tất cả scripts đã load
+            // vartical-layout.min.js sẽ set FixedNavbarPosition và FixedHeaderPosition mặc định
+            await Task.Delay(2000);
+            
+            // Load theme từ database khi component được render lần đầu
+            await LoadThemeFromDatabase();
+            
+            // FORCE re-apply sau 500ms để override vartical-layout.min.js
+            // await Task.Delay(500);
+            await ForceReapplyTheme();
+        }
+    }
+
+    private async Task ForceReapplyTheme()
+    {
+        try
+        {
+            // Re-apply layout settings để override pcoded.min.js
+            await JS.InvokeVoidAsync("themeInterop.setSidebarFixed", FixedSidebar);
+            await JS.InvokeVoidAsync("themeInterop.setHeaderFixed", FixedHeader);
+            await JS.InvokeVoidAsync("themeInterop.setMenuType", MenuType);
+            
+            Console.WriteLine($"Force reapplied theme: FixedSidebar={FixedSidebar}, FixedHeader={FixedHeader}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error force reapplying theme: {ex.Message}");
+        }
+    }
+
+    private async Task LoadThemeFromDatabase()
+    {
+        try
+        {
+            var settings = await ThemeService.GetThemeAsync();
+            
+            // QUAN TRỌNG: Cập nhật C# state TRƯỚC khi apply vào UI
+            FixedSidebar = settings.IsFixedSidebar;
+            FixedHeader = settings.IsFixedHeader;
+            MenuType = settings.MenuType;
+
+            // Force Blazor re-render để update checkboxes và radio buttons
+            StateHasChanged();
+            
+            // Đợi một chút để Blazor render xong
+            await Task.Delay(200);
+
+            // Apply layout settings NGAY (không cần đợi color elements)
+            await JS.InvokeVoidAsync("themeInterop.setSidebarFixed", FixedSidebar);
+            await JS.InvokeVoidAsync("themeInterop.setHeaderFixed", FixedHeader);
+            await JS.InvokeVoidAsync("themeInterop.setMenuType", MenuType);
+            
+            // Apply colors và effects - CHỈ apply attributes, KHÔNG cần color elements
+            await JS.InvokeVoidAsync("themeInterop.applyThemeAttributes", settings);
+            
+            Console.WriteLine($"Theme loaded: FixedSidebar={FixedSidebar}, FixedHeader={FixedHeader}, MenuType={MenuType}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading theme: {ex.Message}");
+        }
+    }
+
+    async Task OnMenuTypeChanged(ChangeEventArgs e)
+    {
+        MenuType = e.Value?.ToString() ?? "st6";
+        await JS.InvokeVoidAsync("themeInterop.setMenuType", MenuType);
+    }
+
+    async Task OnFixedSidebarChanged()
+    {
+        await JS.InvokeVoidAsync("themeInterop.setSidebarFixed", FixedSidebar);
+    }
+
+    async Task OnFixedHeaderChanged()
+    {
+        await JS.InvokeVoidAsync("themeInterop.setHeaderFixed", FixedHeader);
+    }
+
+    private async Task SaveThemeSettings()
+    {
+        isSaving = true;
+        try
+        {
+            // Lấy toàn bộ settings hiện tại từ UI (bao gồm cả các settings được chọn qua click)
+            var currentSettings = await JS.InvokeAsync<Common.Model.SysTheme.ThemeSettingsViewModel>("themeInterop.getCurrentTheme");
+            
+            // Cập nhật các giá trị từ C# binding
+            currentSettings.IsFixedSidebar = FixedSidebar;
+            currentSettings.IsFixedHeader = FixedHeader;
+            currentSettings.MenuType = MenuType;
+
+            // Lưu vào database
+            var success = await ThemeService.SaveThemeAsync(currentSettings);
+            
+            if (success)
+            {
+                await NotificationService.ShowSuccessAsync("Đã lưu cấu hình theme thành công!");
+            }
+            else
+            {
+                await NotificationService.ShowErrorAsync("Lỗi khi lưu cấu hình theme!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowErrorAsync($"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ResetThemeSettings()
+    {
+        isResetting = true;
+        try
+        {
+            var success = await ThemeService.ResetThemeAsync();
+            
+            if (success)
+            {
+                // Reset về giá trị mặc định
+                var defaultSettings = new Common.Model.SysTheme.ThemeSettingsViewModel();
+                FixedSidebar = defaultSettings.IsFixedSidebar;
+                FixedHeader = defaultSettings.IsFixedHeader;
+                MenuType = defaultSettings.MenuType;
+
+                // Apply theme mặc định vào UI
+                await JS.InvokeVoidAsync("themeInterop.applyFullTheme", defaultSettings);
+                
+                await NotificationService.ShowSuccessAsync("Đã reset theme về mặc định!");
+                StateHasChanged();
+            }
+            else
+            {
+                await NotificationService.ShowErrorAsync("Lỗi khi reset theme!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowErrorAsync($"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isResetting = false;
+        }
+    }
+}

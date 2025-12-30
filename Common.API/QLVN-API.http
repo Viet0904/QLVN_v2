@@ -1,0 +1,6 @@
+@QLVN_API_HostAddress = https://localhost:5084
+
+GET {{QLVN_API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
