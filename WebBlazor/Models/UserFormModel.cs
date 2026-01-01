@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace QLVN_Blazor.Models;
+namespace WebBlazor.Models;
 
 public class UserFormModel
 {

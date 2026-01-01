@@ -42,37 +42,50 @@ namespace Common.Service
 
             return res;
         }
-
         public ResModel<UsUserViewModel> Login(string userName, string password)
         {
             ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
 
-            // Lấy user theo username
-            var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
-            
-            if (result != null)
-            {
-                // Decrypt password từ database
-                string decryptedPassword = CryptorEngineHelper.Decrypt(result.Password);
-                
-                // So sánh với password user nhập
-                if (decryptedPassword == password)
-                {
-                    res.Data = Mapper.Map<UsUserViewModel>(result);
-                }
-                else
-                {
-                    res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
-                }
-            }
+            password = PasswordHelper.CreatePassword(password);
+
+            var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.Password == password && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
+            if (result != null) res.Data = Mapper.Map<UsUserViewModel>(result);
             else
             {
                 res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
             }
-
             return res;
         }
 
+        //public ResModel<UsUserViewModel> Login(string userName, string password)
+        //{
+        //    ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
+
+        //    // Lấy user theo username
+        //    var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
+
+        //    if (result != null)
+        //    {
+        //        // Decrypt password từ database
+        //        string decryptedPassword = CryptorEngineHelper.Decrypt(result.Password);
+
+        //        // So sánh với password user nhập
+        //        if (decryptedPassword == password)
+        //        {
+        //            res.Data = Mapper.Map<UsUserViewModel>(result);
+        //        }
+        //        else
+        //        {
+        //            res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
+        //    }
+
+        //    return res;
+        //}
 
         public ResModel<bool> ChangePassword(string userId, string oldPassword, string newPassword)
         {
@@ -81,13 +94,9 @@ namespace Common.Service
             var result = DbContext.UsUsers.Where(x => x.Id == userId).FirstOrDefault();
             if (result != null)
             {
-                // Decrypt password hiện tại từ database
-                string currentPassword = CryptorEngineHelper.Decrypt(result.Password);
-                
-                if (currentPassword == oldPassword)
+                if (result.Password == PasswordHelper.CreatePassword(oldPassword))
                 {
-                    // Encrypt password mới trước khi lưu
-                    result.Password = CryptorEngineHelper.Encrypt(newPassword);
+                    result.Password = PasswordHelper.CreatePassword(newPassword);
                     DbContext.SaveChanges();
                     res.Data = true;
                 }
@@ -103,6 +112,36 @@ namespace Common.Service
 
             return res;
         }
+
+        //public ResModel<bool> ChangePassword(string userId, string oldPassword, string newPassword)
+        //{
+        //    ResModel<bool> res = new ResModel<bool>();
+
+        //    var result = DbContext.UsUsers.Where(x => x.Id == userId).FirstOrDefault();
+        //    if (result != null)
+        //    {
+        //        // Decrypt password hiện tại từ database
+        //        string currentPassword = CryptorEngineHelper.Decrypt(result.Password);
+
+        //        if (currentPassword == oldPassword)
+        //        {
+        //            // Encrypt password mới trước khi lưu
+        //            result.Password = CryptorEngineHelper.Encrypt(newPassword);
+        //            DbContext.SaveChanges();
+        //            res.Data = true;
+        //        }
+        //        else
+        //        {
+        //            res.ErrorMessage = "Mật khẩu cũ không đúng!";
+        //        }
+        //    }
+        //    else
+        //    {
+        //        res.ErrorMessage = MessageConstant.NOT_EXIST;
+        //    }
+
+        //    return res;
+        //}
 
         public ResModel<UsUserViewModel> Create(UsUserCreateModel model)
         {

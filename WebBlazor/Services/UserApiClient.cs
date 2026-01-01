@@ -4,7 +4,7 @@ using Common.Model.User;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace QLVN_Blazor.Services;
+namespace WebBlazor.Services;
 
 public class UserApiClient
 {

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 
-namespace QLVN_Blazor.Services
+namespace WebBlazor.Services
 {
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {

@@ -1,6 +1,6 @@
 ﻿@inject IJSRuntime JS
-@inject QLVN_Blazor.Services.ThemeService ThemeService
-@inject QLVN_Blazor.Services.NotificationService NotificationService
+@inject WebBlazor.Services.ThemeService ThemeService
+@inject WebBlazor.Services.NotificationService NotificationService
 <div id="styleSelector">
 
     <!-- Toggle -->
@@ -291,10 +291,13 @@
 
 
 @code {
+
+
+
     bool FixedSidebar = true;
     bool FixedHeader = true;
     string MenuType = "st6";
-    
+
     bool isSaving = false;
     bool isResetting = false;
 
@@ -305,10 +308,10 @@
             // Đợi lâu hơn để đảm bảo jQuery và tất cả scripts đã load
             // vartical-layout.min.js sẽ set FixedNavbarPosition và FixedHeaderPosition mặc định
             await Task.Delay(2000);
-            
+
             // Load theme từ database khi component được render lần đầu
             await LoadThemeFromDatabase();
-            
+
             // FORCE re-apply sau 500ms để override vartical-layout.min.js
             // await Task.Delay(500);
             await ForceReapplyTheme();
@@ -323,7 +326,7 @@
             await JS.InvokeVoidAsync("themeInterop.setSidebarFixed", FixedSidebar);
             await JS.InvokeVoidAsync("themeInterop.setHeaderFixed", FixedHeader);
             await JS.InvokeVoidAsync("themeInterop.setMenuType", MenuType);
-            
+
             Console.WriteLine($"Force reapplied theme: FixedSidebar={FixedSidebar}, FixedHeader={FixedHeader}");
         }
         catch (Exception ex)
@@ -337,7 +340,7 @@
         try
         {
             var settings = await ThemeService.GetThemeAsync();
-            
+
             // QUAN TRỌNG: Cập nhật C# state TRƯỚC khi apply vào UI
             FixedSidebar = settings.IsFixedSidebar;
             FixedHeader = settings.IsFixedHeader;
@@ -345,7 +348,7 @@
 
             // Force Blazor re-render để update checkboxes và radio buttons
             StateHasChanged();
-            
+
             // Đợi một chút để Blazor render xong
             await Task.Delay(200);
 
@@ -353,10 +356,10 @@
             await JS.InvokeVoidAsync("themeInterop.setSidebarFixed", FixedSidebar);
             await JS.InvokeVoidAsync("themeInterop.setHeaderFixed", FixedHeader);
             await JS.InvokeVoidAsync("themeInterop.setMenuType", MenuType);
-            
+
             // Apply colors và effects - CHỈ apply attributes, KHÔNG cần color elements
             await JS.InvokeVoidAsync("themeInterop.applyThemeAttributes", settings);
-            
+
             Console.WriteLine($"Theme loaded: FixedSidebar={FixedSidebar}, FixedHeader={FixedHeader}, MenuType={MenuType}");
         }
         catch (Exception ex)
@@ -388,11 +391,15 @@
         {
             // Lấy toàn bộ settings hiện tại từ UI (bao gồm cả các settings được chọn qua click)
             var currentSettings = await JS.InvokeAsync<Common.Model.SysTheme.ThemeSettingsViewModel>("themeInterop.getCurrentTheme");
-            
+
             // Cập nhật các giá trị từ C# binding
             currentSettings.IsFixedSidebar = FixedSidebar;
             currentSettings.IsFixedHeader = FixedHeader;
             currentSettings.MenuType = MenuType;
+
+             
+            
+            
 
             // Lưu vào database
             var success = await ThemeService.SaveThemeAsync(currentSettings);

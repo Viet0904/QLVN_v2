@@ -1,7 +1,8 @@
-﻿using Common.Model.SysTheme;
+﻿
+using Common.Model.SysTheme;
 using System.Net.Http.Json;
 
-namespace QLVN_Blazor.Services
+namespace WebBlazor.Services
 {
     public class ThemeService
     {
@@ -16,7 +17,6 @@ namespace QLVN_Blazor.Services
         {
             try
             {
-                // Gọi API lấy config, nếu lỗi hoặc chưa có thì trả về mặc định
                 var result = await _http.GetFromJsonAsync<ThemeSettingsViewModel>("api/Theme");
                 return result ?? new ThemeSettingsViewModel();
             }

@@ -1,7 +1,7 @@
 ﻿using Blazored.LocalStorage;
 using System.Net.Http.Headers;
 
-namespace QLVN_Blazor.Handlers
+namespace WebBlazor.Handlers
 {
     public class JwtAuthorizationHandler : DelegatingHandler
     {

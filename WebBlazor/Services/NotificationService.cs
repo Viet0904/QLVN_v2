@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 
-namespace QLVN_Blazor.Services
+namespace WebBlazor.Services
 {
     public class NotificationService
     {

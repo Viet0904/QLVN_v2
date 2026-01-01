@@ -4,7 +4,7 @@ using Common.Model.Auth;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace QLVN_Blazor.Services
+namespace WebBlazor.Services
 {
     public class AuthService
     {
@@ -32,6 +32,7 @@ namespace QLVN_Blazor.Services
             {
                 var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
                 // Lưu token vào LocalStorage
+                await _localStorage.SetItemAsync("authData", result!);
                 await _localStorage.SetItemAsync("authToken", result!.Token);
 
                 // Thông Báo cho Blazor biết đã đăng nhập 
@@ -88,7 +89,9 @@ namespace QLVN_Blazor.Services
 
         public async Task Logout()
         {
+            // Xoá cả 2 key
             await _localStorage.RemoveItemAsync("authToken");
+            await _localStorage.RemoveItemAsync("authData");
             ((CustomAuthStateProvider)_authStateProvider).NotifyUserLogout();
             
         }

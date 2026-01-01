@@ -1,4 +1,5 @@
 ﻿window.themeInterop = {
+    
     setSidebarFixed: function (isFixed) {
         const navbar = document.querySelector('.pcoded-navbar');
         const inner = document.querySelector('.pcoded-inner-navbar');
@@ -8,7 +9,7 @@
             return;
         }
 
-        console.log('setSidebarFixed được gọi, isFixed:', isFixed);
+        //console.log('setSidebarFixed được gọi, isFixed:', isFixed);
 
         if (isFixed) {
             // === FIXED SIDEBAR ===
@@ -19,7 +20,7 @@
             inner.style.overflowY = 'auto';
             inner.style.height = 'calc(100vh - 80px)';
 
-            console.log('Navbar set to FIXED');
+            //console.log('Navbar set to FIXED');
         } else {
             // === ABSOLUTE SIDEBAR ===
             navbar.setAttribute('pcoded-navbar-position', 'absolute');
@@ -29,7 +30,7 @@
             inner.style.overflowY = '';
             inner.style.height = '';
 
-            console.log('Navbar set to ABSOLUTE');
+            //console.log('Navbar set to ABSOLUTE');
         }
     },
 
@@ -40,7 +41,7 @@
         const pcoded = document.getElementById('pcoded');
 
         if (!header || !mainContainer || !pcoded) {
-            console.error('Header, mainContainer hoặc pcoded không tìm thấy!');
+            //console.error('Header, mainContainer hoặc pcoded không tìm thấy!');
             return;
         }
 
@@ -67,7 +68,7 @@
             
             // Set margin-top cho main-container
             mainContainer.style.marginTop = headerHeight + 'px';
-            console.log('Set margin-top:', headerHeight + 'px');
+            //console.log('Set margin-top:', headerHeight + 'px');
             
         } else {
             // === RELATIVE HEADER ===
@@ -80,7 +81,7 @@
             
             // Reset margin-top về '0px'
             mainContainer.style.marginTop = '0px';
-            console.log('Reset margin-top về 0px');
+            //console.log('Reset margin-top về 0px');
             
             // QUAN TRỌNG: Khi header = relative, phải re-check sidebar position
             // Nếu sidebar = fixed, navbar phải là absolute khi scroll = 0
@@ -90,7 +91,7 @@
                 const isSidebarFixed = pcoded.classList.contains('pcoded-fixed-sidebar');
                 if (isSidebarFixed) {
                     navbar.style.position = 'absolute'; // Khi header relative, navbar fixed phải là absolute
-                    console.log('Navbar position reset to absolute (sidebar fixed + header relative)');
+                    //console.log('Navbar position reset to absolute (sidebar fixed + header relative)');
                 }
             }
         }
@@ -253,7 +254,7 @@
                 console.log('Verify - Navbar background:', navbarStyles.backgroundColor);
             }
         } catch (e) {
-            console.error('Error applying theme attributes:', e);
+            //console.error('Error applying theme attributes:', e);
         }
     },
 
@@ -284,46 +285,46 @@
             setTimeout(() => {
                 if ($mainLayout.length > 0) {
                     $mainLayout.trigger('click');
-                    console.log('Clicked mainLayout button');
+                    //console.log('Clicked mainLayout button');
                 }
             }, 100);
 
             setTimeout(() => {
                 if ($logo.length > 0) {
                     $logo.trigger('click');
-                    console.log('Clicked logo button');
+                    //console.log('Clicked logo button');
                 }
             }, 200);
 
             setTimeout(() => {
                 if ($header.length > 0) {
                     $header.trigger('click');
-                    console.log('Clicked header button');
+                    //console.log('Clicked header button');
                 }
             }, 300);
 
             setTimeout(() => {
                 if ($activeItem.length > 0) {
                     $activeItem.trigger('click');
-                    console.log('Clicked activeItem button');
+                    //console.log('Clicked activeItem button');
                 }
             }, 400);
 
             setTimeout(() => {
                 if ($menuCaption.length > 0) {
                     $menuCaption.trigger('click');
-                    console.log('Clicked menuCaption button');
+                    //console.log('Clicked menuCaption button');
                 }
             }, 500);
 
         } catch (e) {
-            console.error('Error highlighting color buttons:', e);
+            //console.error('Error highlighting color buttons:', e);
         }
     },
 
     // Apply toàn bộ theme settings vào UI (khi SettingTheme panel mở)
     applyFullTheme: function (settings) {
-        console.log('Applying full theme:', settings);
+        //console.log('Applying full theme:', settings);
 
         // QUAN TRỌNG: Apply theo đúng thứ tự
         // 1. Sidebar TRƯỚC (để set navbar position)
@@ -339,7 +340,7 @@
         setTimeout(() => {
             // Check jQuery available
             if (typeof $ === 'undefined') {
-                console.warn('jQuery not loaded yet, retrying...');
+                //console.warn('jQuery not loaded yet, retrying...');
                 setTimeout(() => this.applyFullTheme(settings), 200);
                 return;
             }
@@ -378,7 +379,7 @@
             this.applyThemeClass('.active-item-theme', 'active-item-theme', settings.activeLinkColor || 'theme1');
             this.applyThemeClass('.leftheader-theme', 'lheader-theme', settings.menuCaptionColor || 'theme5');
 
-            console.log('Theme applied successfully');
+            //console.log('Theme applied successfully');
         }, 200);
     },
 

@@ -4,7 +4,7 @@ namespace Common.Model.SysTheme
 {
     public class ThemeSettingsUpdateModel
     {
-        public string UserId { get; set; } = null!;
+        public string? UserId { get; set; }
         // 1. Layout Options
         public bool IsFixedSidebar { get; set; } = true; // id="sidebar-position"
         public bool IsFixedHeader { get; set; } = true;  // id="header-position"
