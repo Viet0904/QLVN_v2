@@ -1,14 +1,16 @@
-﻿using Common.Library.Helper;
+﻿using AutoMapper;
+using Common.Database.Data;
+using Common.Library.Helper;
+using Common.Model.Common;
 using Common.Service;
 using Common.Service.Common;
-using Common.Model.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.Data.SqlClient;
-using Common.Database.Data;
+
 //using Common.Library.Helper;
 using System.Text;
 
@@ -24,18 +26,13 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()); // Cho phép gửi Token header
 });
 
-
-
-
-// 1. Kết nối DB với mã hóa
-// Lấy encrypted connection string từ appsettings.json
-// DataProvider sẽ tự động decrypt trong BuildConnectionString()
+// ✅ 1. LẤY ENCRYPTED CONNECTION STRING
 string encryptedServer = builder.Configuration.GetConnectionString("DatabaseIP") ?? "";
 string encryptedDatabase = builder.Configuration.GetConnectionString("DatabaseName") ?? "";
 string encryptedUserName = builder.Configuration.GetConnectionString("DatabaseUser") ?? "";
 string encryptedPassword = builder.Configuration.GetConnectionString("DatabasePassword") ?? "";
 
-// Set UnitOfWork connection string (encrypted - sẽ được decrypt trong DataProvider)
+// ✅ 2. TẠO MODEL VÀ SET CHO UnitOfWork
 var clientSql = new SQLConnectionStringModel
 {
     Ip = encryptedServer,
@@ -45,27 +42,45 @@ var clientSql = new SQLConnectionStringModel
 };
 UnitOfWork.SetClientConnectionString = clientSql;
 
-// Decrypt cho EF Core DbContext
-string server = CryptorEngineHelper.Decrypt(encryptedServer);
-string database = CryptorEngineHelper.Decrypt(encryptedDatabase);
-string userName = CryptorEngineHelper.Decrypt(encryptedUserName);
-string password = CryptorEngineHelper.Decrypt(encryptedPassword);
+// ✅ 3. TẠO DataProvider VÀ LẤY CONNECTION STRING
+var tempProvider = new DataProvider(clientSql);
+string efConn = tempProvider.GetConnectionString();
 
-// Register EF Core context với connection string đã decrypt
-var efConn = $"Data Source={server};Initial Catalog={database};User ID={userName};Password={password};Trust Server Certificate=True;";
-builder.Services.AddDbContext<QLVN_DbContext>(options => 
-    options.UseSqlServer(efConn, sqlOptions => 
+Console.WriteLine("========== DECRYPTED VALUES ==========");
+Console.WriteLine($"Server: {CryptorEngineHelper.Decrypt(encryptedServer)}");
+Console.WriteLine($"Database: {CryptorEngineHelper.Decrypt(encryptedDatabase)}");
+Console.WriteLine($"Username: {CryptorEngineHelper.Decrypt(encryptedUserName)}");
+Console.WriteLine($"Password: [{CryptorEngineHelper.Decrypt(encryptedPassword)}]");
+Console.WriteLine($"Password Length: {CryptorEngineHelper.Decrypt(encryptedPassword).Length}");
+Console.WriteLine("======================================");
+Console.WriteLine($"EF Connection String: {efConn}");
+Console.WriteLine("======================================");
+
+// ✅ 4. ĐĂNG KÝ DbContext - QUAN TRỌNG!
+builder.Services.AddDbContext<QLVN_DbContext>(options =>
+{
+    options.UseSqlServer(efConn, sqlOptions =>
     {
         sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
             errorNumbersToAdd: null
         );
-    })
-);
+        sqlOptions.CommandTimeout(30);
+    });
+}, ServiceLifetime.Scoped); // ✅ Đảm bảo Scoped lifetime
+
+// ✅ 5. ĐĂNG KÝ BaseEntity VỚI CÙNG CONNECTION STRING
+builder.Services.AddScoped<BaseEntity>(sp => new BaseEntity(efConn));
+
+// ✅ ĐĂNG KÝ AutoMapper - Sử dụng BaseEntity
+builder.Services.AddScoped<IMapper>(sp =>
+{
+    var baseEntity = sp.GetRequiredService<BaseEntity>();
+    return MapperConfig.BuildMapper(baseEntity);
+});
 
 // Cấu hình JWT
-// Program.cs
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

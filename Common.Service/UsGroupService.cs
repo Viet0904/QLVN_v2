@@ -1,4 +1,5 @@
-﻿using Common.Database;
+﻿using AutoMapper;
+using Common.Database.Data;
 using Common.Library.Constant;
 using Common.Model.Common;
 using Common.Model.Group;
@@ -11,6 +12,12 @@ namespace Common.Service
 {
     public class UsGroupService : BaseService
     {
+        // ✅ Constructor nhận DbContext và IMapper
+        public UsGroupService(QLVN_DbContext dbContext, IMapper mapper)
+            : base(dbContext, mapper)
+        {
+        }
+
         /// <summary>
         /// Lấy tất cả nhóm người dùng Active
         /// </summary>

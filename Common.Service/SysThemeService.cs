@@ -1,11 +1,12 @@
-﻿using Common.Database;
+﻿using AutoMapper;
+using Common.Database;
+using Common.Database.Data;
 using Common.Library.Constant;
 using Common.Library.Helper;
 using Common.Model.Common;
 using Common.Model.SysTheme;
 using Common.Service.Common;
 using System;
-
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -14,6 +15,12 @@ namespace Common.Service
 {
     public class SysThemeService : BaseService
     {
+        // ✅ Constructor nhận DbContext và IMapper
+        public SysThemeService(QLVN_DbContext dbContext, IMapper mapper)
+            : base(dbContext, mapper)
+        {
+        }
+
         /// <summary>
         /// Lấy cấu hình theme của user
         /// </summary>
@@ -120,67 +127,5 @@ namespace Common.Service
 
             return res;
         }
-
-        //public async Task<ThemeSettings> GetThemeSettingsAsync(string userId)
-        //{
-        //    var config = await _unitOfWork.Repository<SysTheme>().GetByIdAsync(userId);
-
-        //    if (config == null || string.IsNullOrEmpty(config.Settings))
-        //    {
-        //        // Nếu chưa có cấu hình, trả về mặc định (theo class bạn định nghĩa)
-        //        return new ThemeSettings();
-        //    }
-
-        //    try
-        //    {
-        //        // Deserialize JSON từ DB ra Object
-        //        return JsonSerializer.Deserialize<ThemeSettings>(config.Settings) ?? new ThemeSettings();
-        //    }
-        //    catch
-        //    {
-        //        return new ThemeSettings();
-        //    }
-        //}
-
-        //public async Task SaveThemeSettingsAsync(string userId, ThemeSettings settings)
-        //{
-        //    var repo = _unitOfWork.Repository<UsUserConfig>();
-        //    var config = await repo.GetByIdAsync(userId);
-
-        //    // Chuyển Object C# thành chuỗi JSON để lưu DB
-        //    var jsonString = JsonSerializer.Serialize(settings);
-
-        //    if (config == null || string.IsNullOrEmpty(config.Settings))
-        //    {
-        //        config = new UsUserConfig
-        //        {
-        //            UserId = userId,
-        //            Settings = jsonString,
-        //            UpdatedAt = DateTime.Now
-        //        };
-        //        await repo.AddAsync(config);
-        //    }
-        //    else
-        //    {
-        //        config.Settings = jsonString;
-        //        config.UpdatedAt = DateTime.Now;
-        //        repo.Update(config);
-        //    }
-        //    await _unitOfWork.SaveChangesAsync();
-        //}
-
-
-        //public async Task ResetThemeSettingsAsync(string userId)
-        //{
-        //    var repo = _unitOfWork.Repository<UsUserConfig>();
-        //    var config = await repo.GetByIdAsync(userId);
-        //    if (config != null)
-        //    {
-        //        repo.Delete(config);
-        //        await _unitOfWork.SaveChangesAsync();
-        //    }
-        //}
     }
-
-
 }

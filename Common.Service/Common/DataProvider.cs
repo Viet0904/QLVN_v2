@@ -36,6 +36,11 @@ namespace Common.Service.Common
         #endregion Contructor
 
         #region Method
+        // CHIA SẺ CONNECTION STRING
+        public string GetConnectionString()
+        {
+            return _dbClientConnectionString;
+        }
 
         public void RenewDB()
         {
@@ -76,12 +81,13 @@ namespace Common.Service.Common
 
         private string BuildConnectionString(string server, string database, string userName, string password)
         {
+            // Giải mã
             server = CryptorEngineHelper.Decrypt(server);
             database = CryptorEngineHelper.Decrypt(database);
             userName = CryptorEngineHelper.Decrypt(userName);
             password = CryptorEngineHelper.Decrypt(password);
 
-
+            
             string connection = string.Format("data source={0};initial catalog={1};user id={2};password={3}", server, database, userName, password);
             // Build standard ADO.NET connection string for SQL Server
             var builder = new SqlConnectionStringBuilder
@@ -91,7 +97,8 @@ namespace Common.Service.Common
                 UserID = userName,
                 Password = password,
                 MultipleActiveResultSets = true,
-                TrustServerCertificate = true
+                TrustServerCertificate = true,
+                Encrypt = false // Tắt mã hóa nếu dùng SQL Server local
             };
             return builder.ToString();
             //var entityBuilder = new EntityConnectionStringBuilder();

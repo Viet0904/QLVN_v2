@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Common.Database.Data;
 using Common.Database.Entities;
 using Common.Model.Common;
 using Microsoft.EntityFrameworkCore;
@@ -14,32 +15,22 @@ namespace Common.Service.Common
     {
         #region Properties
 
-        public BaseEntity DbContext
-        {
-            get
-            {
-                return UnitOfWork.Ins.DB;
-            }
-        }
-
-        public IMapper Mapper
-        {
-            get
-            {
-                return UnitOfWork.Ins.Mapper;
-            }
-        }
+        // Nhận từ constructor thay vì từ UnitOfWork
+        protected readonly QLVN_DbContext DbContext;
+        protected readonly IMapper Mapper;
 
         #endregion Properties
 
-        #region Contructor
+        #region ConstructorMapperProfile
 
-        public BaseService()
+        //  Inject DbContext và IMapper qua constructor
+        public BaseService(QLVN_DbContext dbContext, IMapper mapper)
         {
-            UnitOfWork.Ins.RenewDB();
+            DbContext = dbContext;
+            Mapper = mapper;
         }
 
-        #endregion Contructor
+        #endregion Constructor
 
         #region Store procedure
 
@@ -108,7 +99,6 @@ namespace Common.Service.Common
             var dbConnection = DbContext.Database.GetDbConnection();
             using (var command = dbConnection.CreateCommand())
             {
-                // attach existing EF Core transaction if any
                 var current = DbContext.Database.CurrentTransaction;
                 if (current != null)
                 {
@@ -170,7 +160,6 @@ namespace Common.Service.Common
 
         public int ExecuteSqlCommand(string query)
         {
-            // EF Core replacement for ExecuteSqlCommand (EF6)
             return DbContext.Database.ExecuteSqlRaw(query);
         }
 
@@ -180,7 +169,6 @@ namespace Common.Service.Common
 
         public IList<T> SqlQuery<T>(string query) where T : class
         {
-            // Use FromSqlRaw on the DbSet for EF Core
             return DbContext.Set<T>().FromSqlRaw(query).ToList();
         }
 
@@ -198,9 +186,11 @@ namespace Common.Service.Common
             }
             else
             {
-                table = new SysIdGenerated();
-                table.Table = tableName;
-                table.TotalRows = 1;
+                table = new SysIdGenerated
+                {
+                    Table = tableName,
+                    TotalRows = 1
+                };
                 DbContext.SysIdGenerateds.Add(table);
                 DbContext.SaveChanges();
             }

@@ -1,4 +1,5 @@
-using Common.Database;
+using AutoMapper;
+using Common.Database.Data;
 using Common.Library.Constant;
 using Common.Library.Helper;
 using Common.Model.Auth;
@@ -27,10 +28,12 @@ namespace Common.Service
         private readonly IConfiguration _config;
         private readonly UsUserService _usUserService;
 
-        public UserService(IConfiguration config)
+        // ✅ Constructor nhận DbContext, IMapper và IConfiguration
+        public UserService(QLVN_DbContext dbContext, IMapper mapper, IConfiguration config)
+            : base(dbContext, mapper)
         {
             _config = config;
-            _usUserService = new UsUserService();
+            _usUserService = new UsUserService(dbContext, mapper); // ✅ Truyền dependencies
         }
 
         public async Task<IEnumerable<UserDto>> GetAllAsync()

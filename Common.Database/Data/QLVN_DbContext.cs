@@ -83,18 +83,18 @@ public partial class QLVN_DbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Chỉ configure nếu chưa được configure (để DI có thể override)
-        if (!optionsBuilder.IsConfigured)
-        {
-            // Connection string mặc định (chỉ dùng khi không có DI)
-            optionsBuilder.UseSqlServer(
-                "Data Source=172.16.80.242,1455;Initial Catalog=IDI_QLVN;Persist Security Info=True;User ID=sa;Password=0303141296;Trust Server Certificate=True",
-                sqlOptions => sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorNumbersToAdd: null
-                )
-            );
-        }
+        //if (!optionsBuilder.IsConfigured)
+        //{
+        //    // Connection string mặc định (chỉ dùng khi không có DI)
+        //    optionsBuilder.UseSqlServer(
+        //        "Data Source=172.16.80.242,1455;Initial Catalog=IDI_QLVN;Persist Security Info=True;User ID=sa;Password=0303141296;Trust Server Certificate=True",
+        //        sqlOptions => sqlOptions.EnableRetryOnFailure(
+        //            maxRetryCount: 5,
+        //            maxRetryDelay: TimeSpan.FromSeconds(30),
+        //            errorNumbersToAdd: null
+        //        )
+        //    );
+        //}
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

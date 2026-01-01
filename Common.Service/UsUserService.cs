@@ -1,30 +1,41 @@
-﻿using Common.Database.Entities;
+﻿using AutoMapper;
+using Common.Database.Data;
+using Common.Database.Entities;
 using Common.Library.Constant;
 using Common.Library.Helper;
 using Common.Model.Common;
 using Common.Model.UsUser;
 using Common.Service.Common;
-using System.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Common.Service
 {
     public class UsUserService : BaseService
     {
+        // ✅ THAY ĐỔI: Constructor nhận DbContext và IMapper
+        public UsUserService(QLVN_DbContext dbContext, IMapper mapper)
+            : base(dbContext, mapper)
+        {
+        }
+
         public ResModel<List<UsUserViewModel>> GetAll()
         {
             ResModel<List<UsUserViewModel>> res = new ResModel<List<UsUserViewModel>>();
 
-            var results = DbContext.UsUsers.Where(x => x.RowStatus == RowStatusConstant.Active).ToList();
-            res.Data = Mapper.Map<List<UsUserViewModel>>(results);
+            var result = DbContext.UsUsers.Where(x => x.RowStatus == RowStatusConstant.Active).ToList();
+            res.Data = Mapper.Map<List<UsUserViewModel>>(result);
 
             return res;
         }
+
         public ResModel<List<UsUserViewModel>> GetFull()
         {
             ResModel<List<UsUserViewModel>> res = new ResModel<List<UsUserViewModel>>();
 
-            var results = DbContext.UsUsers.ToList();
-            res.Data = Mapper.Map<List<UsUserViewModel>>(results);
+            var result = DbContext.UsUsers.ToList();
+            res.Data = Mapper.Map<List<UsUserViewModel>>(result);
 
             return res;
         }
@@ -33,115 +44,38 @@ namespace Common.Service
         {
             ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
 
-            var result = DbContext.UsUsers.Where(x => x.Id == id && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
-            if (result != null) res.Data = Mapper.Map<UsUserViewModel>(result);
-            else
-            {
-                res.ErrorMessage = MessageConstant.NOT_EXIST;
-            }
+            var result = DbContext.UsUsers.Where(x => x.Id == id).FirstOrDefault();
+            res.Data = Mapper.Map<UsUserViewModel>(result);
 
             return res;
         }
+
         public ResModel<UsUserViewModel> Login(string userName, string password)
         {
             ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
 
-            password = PasswordHelper.CreatePassword(password);
+            var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
 
-            var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.Password == password && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
-            if (result != null) res.Data = Mapper.Map<UsUserViewModel>(result);
+            if (result != null)
+            {
+                string decryptedPassword = CryptorEngineHelper.Decrypt(result.Password);
+
+                if (decryptedPassword == password)
+                {
+                    res.Data = Mapper.Map<UsUserViewModel>(result);
+                }
+                else
+                {
+                    res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
+                }
+            }
             else
             {
                 res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
             }
-            return res;
-        }
-
-        //public ResModel<UsUserViewModel> Login(string userName, string password)
-        //{
-        //    ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
-
-        //    // Lấy user theo username
-        //    var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
-
-        //    if (result != null)
-        //    {
-        //        // Decrypt password từ database
-        //        string decryptedPassword = CryptorEngineHelper.Decrypt(result.Password);
-
-        //        // So sánh với password user nhập
-        //        if (decryptedPassword == password)
-        //        {
-        //            res.Data = Mapper.Map<UsUserViewModel>(result);
-        //        }
-        //        else
-        //        {
-        //            res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
-        //        }
-        //    }
-        //    else
-        //    {
-        //        res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
-        //    }
-
-        //    return res;
-        //}
-
-        public ResModel<bool> ChangePassword(string userId, string oldPassword, string newPassword)
-        {
-            ResModel<bool> res = new ResModel<bool>();
-
-            var result = DbContext.UsUsers.Where(x => x.Id == userId).FirstOrDefault();
-            if (result != null)
-            {
-                if (result.Password == PasswordHelper.CreatePassword(oldPassword))
-                {
-                    result.Password = PasswordHelper.CreatePassword(newPassword);
-                    DbContext.SaveChanges();
-                    res.Data = true;
-                }
-                else
-                {
-                    res.ErrorMessage = "Mật khẩu cũ không đúng!";
-                }
-            }
-            else
-            {
-                res.ErrorMessage = MessageConstant.NOT_EXIST;
-            }
 
             return res;
         }
-
-        //public ResModel<bool> ChangePassword(string userId, string oldPassword, string newPassword)
-        //{
-        //    ResModel<bool> res = new ResModel<bool>();
-
-        //    var result = DbContext.UsUsers.Where(x => x.Id == userId).FirstOrDefault();
-        //    if (result != null)
-        //    {
-        //        // Decrypt password hiện tại từ database
-        //        string currentPassword = CryptorEngineHelper.Decrypt(result.Password);
-
-        //        if (currentPassword == oldPassword)
-        //        {
-        //            // Encrypt password mới trước khi lưu
-        //            result.Password = CryptorEngineHelper.Encrypt(newPassword);
-        //            DbContext.SaveChanges();
-        //            res.Data = true;
-        //        }
-        //        else
-        //        {
-        //            res.ErrorMessage = "Mật khẩu cũ không đúng!";
-        //        }
-        //    }
-        //    else
-        //    {
-        //        res.ErrorMessage = MessageConstant.NOT_EXIST;
-        //    }
-
-        //    return res;
-        //}
 
         public ResModel<UsUserViewModel> Create(UsUserCreateModel model)
         {
@@ -152,7 +86,7 @@ namespace Common.Service
             {
                 try
                 {
-                    UnitOfWork.Ins.TransactionOpen();
+                    DbContext.Database.BeginTransaction();
 
                     var item = Mapper.Map<UsUser>(model);
 
@@ -163,19 +97,17 @@ namespace Common.Service
                     if (resultIdExist != null)
                         goto generateId;
 
-                    // Encrypt password trước khi lưu vào database
                     item.Password = CryptorEngineHelper.Encrypt(model.Password);
                     DbContext.UsUsers.Add(item);
                     DbContext.SaveChanges();
 
-                    UnitOfWork.Ins.TransactionCommit();
-                    UnitOfWork.Ins.RenewDB();
+                    DbContext.Database.CommitTransaction();
 
                     res = GetById(item.Id);
                 }
                 catch (Exception)
                 {
-                    UnitOfWork.Ins.TransactionRollback();
+                    DbContext.Database.RollbackTransaction();
                     throw;
                 }
             }
