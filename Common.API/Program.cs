@@ -119,6 +119,7 @@ builder.Services.AddScoped<SysThemeService>();
 builder.Services.AddScoped<UsGroupService>();
 builder.Services.AddScoped<DvsdService>();
 builder.Services.AddScoped<UsUserService>();
+builder.Services.AddScoped<SysMenuService>();
 
 // Add services to the container.
 

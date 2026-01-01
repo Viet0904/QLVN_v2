@@ -14,7 +14,7 @@ namespace Common.Service
 {
     public class UsUserService : BaseService
     {
-        // ✅ THAY ĐỔI: Constructor nhận DbContext và IMapper
+        //  Constructor nhận DbContext và IMapper
         public UsUserService(QLVN_DbContext dbContext, IMapper mapper)
             : base(dbContext, mapper)
         {

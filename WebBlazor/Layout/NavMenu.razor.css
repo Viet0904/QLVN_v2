@@ -38,3 +38,182 @@
     -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
+/* FIX Issue #2: Active menu item colors based on active-item-theme attribute */
+
+/* Default active item color */
+.pcoded-navbar .pcoded-item > li.active > a {
+    font-weight: 600;
+}
+
+/* Theme 1 - Primary Blue */
+.pcoded-navbar[active-item-theme="theme1"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme1"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #01a9ac !important;
+    background-color: rgba(1, 169, 172, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme1"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme1"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #01a9ac !important;
+    }
+
+/* Theme 2 - Success Green */
+.pcoded-navbar[active-item-theme="theme2"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme2"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #0ac282 !important;
+    background-color: rgba(10, 194, 130, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme2"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme2"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #0ac282 !important;
+    }
+
+/* Theme 3 - Warning Orange */
+.pcoded-navbar[active-item-theme="theme3"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme3"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #fe9365 !important;
+    background-color: rgba(254, 147, 101, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme3"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme3"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #fe9365 !important;
+    }
+
+/* Theme 4 - Danger Red */
+.pcoded-navbar[active-item-theme="theme4"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme4"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #eb3422 !important;
+    background-color: rgba(235, 52, 34, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme4"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme4"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #eb3422 !important;
+    }
+
+/* Theme 5 - Info Cyan */
+.pcoded-navbar[active-item-theme="theme5"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme5"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #2DCEE3 !important;
+    background-color: rgba(45, 206, 227, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme5"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme5"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #2DCEE3 !important;
+    }
+
+/* Theme 6 - Inverse Dark */
+.pcoded-navbar[active-item-theme="theme6"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme6"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #404E67 !important;
+    background-color: rgba(64, 78, 103, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme6"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme6"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #404E67 !important;
+    }
+
+/* Theme 7 - Purple */
+.pcoded-navbar[active-item-theme="theme7"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme7"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #7C4DFF !important;
+    background-color: rgba(124, 77, 255, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme7"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme7"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #7C4DFF !important;
+    }
+
+/* Theme 8 - Pink */
+.pcoded-navbar[active-item-theme="theme8"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme8"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #FF5370 !important;
+    background-color: rgba(255, 83, 112, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme8"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme8"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #FF5370 !important;
+    }
+
+/* Theme 9 - Teal */
+.pcoded-navbar[active-item-theme="theme9"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme9"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #39ADB5 !important;
+    background-color: rgba(57, 173, 181, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme9"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme9"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #39ADB5 !important;
+    }
+
+/* Theme 10 - Brown */
+.pcoded-navbar[active-item-theme="theme10"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme10"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #ab7967 !important;
+    background-color: rgba(171, 121, 103, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme10"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme10"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #ab7967 !important;
+    }
+
+/* Theme 11 - Yellow */
+.pcoded-navbar[active-item-theme="theme11"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme11"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #FFB64D !important;
+    background-color: rgba(255, 182, 77, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme11"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme11"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #FFB64D !important;
+    }
+
+/* Theme 12 - Lime */
+.pcoded-navbar[active-item-theme="theme12"] .pcoded-item > li.active > a,
+.pcoded-navbar[active-item-theme="theme12"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    color: #16D39A !important;
+    background-color: rgba(22, 211, 154, 0.1);
+}
+
+    .pcoded-navbar[active-item-theme="theme12"] .pcoded-item > li.active > a:before,
+    .pcoded-navbar[active-item-theme="theme12"] .pcoded-hasmenu .pcoded-submenu li.active > a:before {
+        border-left-color: #16D39A !important;
+    }
+
+/* Active menu icon color */
+.pcoded-navbar .pcoded-item > li.active > a > .pcoded-micon i {
+    color: inherit;
+}
+
+/* Active submenu items */
+.pcoded-navbar .pcoded-hasmenu .pcoded-submenu li.active > a {
+    font-weight: 600;
+    padding-left: 32px;
+}
+
+/* Hover effects */
+.pcoded-navbar .pcoded-item > li > a:hover,
+.pcoded-navbar .pcoded-hasmenu .pcoded-submenu li > a:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Light theme active items */
+.pcoded-navbar[navbar-theme="themelight1"] .pcoded-item > li.active > a,
+.pcoded-navbar[navbar-theme="themelight1"] .pcoded-hasmenu .pcoded-submenu li.active > a {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Light theme hover */
+.pcoded-navbar[navbar-theme="themelight1"] .pcoded-item > li > a:hover,
+.pcoded-navbar[navbar-theme="themelight1"] .pcoded-hasmenu .pcoded-submenu li > a:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}

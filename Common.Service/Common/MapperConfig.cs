@@ -4,6 +4,8 @@ using Common.Database.Entities;
 using Common.Library.Extension;
 using Common.Library.Helper;
 using Common.Model.UsUser;
+using Common.Model.SysMenu;
+using Common.Model.Group;
 using System.Linq;
 
 namespace Common.Service.Common
@@ -46,6 +48,24 @@ namespace Common.Service.Common
 
             cfg.CreateMap<UsUserUpdateModel, UsUser>()
                 .IgnoreAllNonExisting();
+
+            #endregion
+
+            #region SysMenu
+            
+            cfg.CreateMap<SysMenu, SysMenuViewModel>();
+
+            cfg.CreateMap<SysMenuCreateModel, SysMenu>()
+                .IgnoreAllNonExisting();
+
+            cfg.CreateMap<SysMenuUpdateModel, SysMenu>()
+                .IgnoreAllNonExisting();
+
+            #endregion
+
+            #region UsGroup
+            
+            cfg.CreateMap<UsGroup, GroupDto>();
 
             #endregion
 

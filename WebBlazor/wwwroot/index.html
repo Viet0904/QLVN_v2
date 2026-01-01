@@ -23,7 +23,6 @@
     <link rel="stylesheet" type="text/css" href="css/feather.css">
 
     <!-- DataTables CSS -->
-
     <link rel="stylesheet" href="css/dataTables.dataTables.min.css" />
     <link rel="stylesheet" href="/css/select.dataTables.min.css" />
 
@@ -32,6 +31,8 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <link rel="stylesheet" type="text/css" href="css/jquery.mCustomScrollbar.css">
+    
+   
 
     <!-- Blazor CSS -->
     <link href="css/app.css" rel="stylesheet" />
@@ -97,7 +98,7 @@
     <script src="js/bootstrap-growl.min.js"></script>
 
     <!-- Plugins (AFTER Bootstrap) -->
-    <script src="js/jquery.slimscroll.js"></script> <!-- Fix slimScroll -->
+    <script src="js/jquery.slimscroll.js"></script>
     <script src="js/jquery.mCustomScrollbar.concat.min.js"></script>
 
     <!-- Modernizr & Others -->
@@ -115,7 +116,6 @@
     <script src="js/datatables_custom.js"></script>
     <script src="js/data-table-custom.js"></script>
 
-
     <script src="js/pcoded.min.js"></script>
     <script src="js/vartical-layout.min.js"></script>
 
@@ -125,9 +125,23 @@
     <script src="js/i18nextBrowserLanguageDetector.min.js"></script>
     <script src="js/jquery-i18next.min.js"></script>
 
-    <!-- Custom JS (LAST, before Blazor) -->
-    <script src="js/scriptLoader.js"></script>
+    <!-- CRITICAL: Load themeInterop.js BEFORE other custom scripts -->
     <script src="js/themeInterop.js"></script>
+    
+    <!-- Verify themeInterop is loaded -->
+    <script>
+        (function() {
+            // Wait for DOM and scripts to be ready
+            if (typeof window.themeInterop === 'undefined') {
+                console.error('CRITICAL: themeInterop.js failed to load!');
+            } else {
+                console.log('✓ themeInterop.js loaded successfully');
+            }
+        })();
+    </script>
+
+    <!-- Custom JS (AFTER themeInterop) -->
+    <script src="js/scriptLoader.js"></script>
     <script src="js/script.js"></script>
     <script type="text/javascript" src="js/notificationManager.js"></script>
 

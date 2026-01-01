@@ -11,6 +11,8 @@ public partial class SysMenu
 
     public string Note { get; set; } = null!;
 
+    public string? Icon { get; set; }
+
     public int? IsActive { get; set; }
 
     public virtual ICollection<UsUserPermission> UsUserPermissions { get; set; } = new List<UsUserPermission>();

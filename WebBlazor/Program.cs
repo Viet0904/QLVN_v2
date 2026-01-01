@@ -47,6 +47,7 @@ namespace WebBlazor
         builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
                     builder.Services.AddScoped<ThemeService>();
                     builder.Services.AddScoped<AuthService>();
+                    builder.Services.AddScoped<MenuService>();
 
                     await builder.Build().RunAsync();
                 }

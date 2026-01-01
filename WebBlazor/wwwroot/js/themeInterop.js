@@ -1,5 +1,21 @@
 ﻿window.themeInterop = {
     
+    // NEW: Reinitialize Bootstrap tabs (fix issue #1)
+    reinitializeTabs: function() {
+        if (typeof $ !== 'undefined' && $.fn.tab) {
+            // Force reinitialize all tabs
+            $('.nav-tabs a[data-toggle="tab"]').off('click').on('click', function(e) {
+                e.preventDefault();
+                $(this).tab('show');
+            });
+            
+            // Ensure active tab is shown
+            $('.nav-tabs .nav-link.active').tab('show');
+            
+            console.log('Tabs reinitialized');
+        }
+    },
+    
     setSidebarFixed: function (isFixed) {
         const navbar = document.querySelector('.pcoded-navbar');
         const inner = document.querySelector('.pcoded-inner-navbar');
@@ -156,6 +172,7 @@
     },
 
     // Apply ATTRIBUTES ONLY - không cần color elements
+    // FIX Issue #3: Apply colors in correct order with proper z-index
     applyThemeAttributes: function (settings) {
         console.log('Applying theme attributes:', settings);
 
@@ -173,17 +190,33 @@
             const $header = $('.pcoded-header');
             const $navLabel = $('.pcoded-navigatio-lavel');
 
-            // Remove old attributes first
-            $navbar.removeAttr('navbar-theme active-item-theme');
+            // Remove old attributes first - TỪNG CÁI MỘT
+            $navbar.removeAttr('navbar-theme');
+            $navbar.removeAttr('active-item-theme');
             $logo.removeAttr('logo-theme');
             $header.removeAttr('header-theme');
             $navLabel.removeAttr('menu-title-theme');
 
-            // Apply new attributes
-            $navbar.attr('navbar-theme', settings.mainLayout || 'theme1');
+            // FIX Issue #3: Apply với z-index phù hợp
+            // Thứ tự: Logo -> Header -> Navbar -> Active -> Caption
+            
+            // 1. Logo (Header Brand) - PHẢI CÓ Z-INDEX CAO NHẤT
             $logo.attr('logo-theme', settings.headerBrandColor || 'theme1');
+            $logo.css('z-index', '1030'); // Higher than header
+            $logo.css('position', 'relative');
+            
+            // 2. Header - Z-INDEX THẤP HƠN LOGO
             $header.attr('header-theme', settings.headerColor || 'theme1');
+            $header.css('z-index', '1029');
+            $header.css('position', 'relative');
+            
+            // 3. Navbar theme
+            $navbar.attr('navbar-theme', settings.mainLayout || 'theme1');
+            
+            // 4. Active link color
             $navbar.attr('active-item-theme', settings.activeLinkColor || 'theme1');
+            
+            // 5. Menu caption
             $navLabel.attr('menu-title-theme', settings.menuCaptionColor || 'theme5');
 
             // Apply select boxes (PHẢI ĐẶT TRƯỚC khi highlight buttons)
@@ -244,10 +277,12 @@
             if ($logo[0]) {
                 const logoStyles = window.getComputedStyle($logo[0]);
                 console.log('Verify - Logo background:', logoStyles.backgroundColor);
+                console.log('Verify - Logo z-index:', logoStyles.zIndex);
             }
             if ($header[0]) {
                 const headerStyles = window.getComputedStyle($header[0]);
                 console.log('Verify - Header background:', headerStyles.backgroundColor);
+                console.log('Verify - Header z-index:', headerStyles.zIndex);
             }
             if ($navbar[0]) {
                 const navbarStyles = window.getComputedStyle($navbar[0]);
@@ -326,7 +361,7 @@
     applyFullTheme: function (settings) {
         //console.log('Applying full theme:', settings);
 
-        // QUAN TRỌNG: Apply theo đúng thứ tự
+        
         // 1. Sidebar TRƯỚC (để set navbar position)
         this.setSidebarFixed(settings.isFixedSidebar);
         
@@ -403,7 +438,7 @@
         });
         
         // Apply theme trực tiếp vào các elements chính
-        // Dựa theo logic trong script.js
+
         try {
             if (selector === '.navbar-theme') {
                 $('.pcoded-navbar').attr('navbar-theme', themeValue);

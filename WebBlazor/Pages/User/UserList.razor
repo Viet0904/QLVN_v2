@@ -1,4 +1,4 @@
-﻿@page "/users"
+﻿@page "/system_user"
 @using Common.Model.User
 @using Common.Model.Group
 @using Common.Model.Common
@@ -176,24 +176,6 @@
         {
             layoutInitialized = true;
 
-            await JS.InvokeVoidAsync("eval", @"
-                if (typeof menu === 'undefined') {
-                    window.menu = {};
-                }
-                if (typeof vertical === 'undefined') {
-                    window.vertical = {};
-                }
-                var styleSelector = document.getElementById('styleSelector');
-                if (styleSelector) {
-                    styleSelector.classList.remove('open');
-                }
-            ");
-
-            await Task.Delay(100);
-            await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/pcoded.min.js');");
-            await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/vartical-layout.min.js');");
-            await JS.InvokeVoidAsync("eval", "if (typeof $.getScript === 'function') $.getScript('js/script.js');");
-
             if (!dataTableInitialized)
             {
                 // Đăng ký Blazor instance trước
@@ -205,6 +187,11 @@
                 
                 // Load data vào DataTable qua JS
                 await JS.InvokeVoidAsync("updateUserDataTableData", $"#{tableId}", paginatedUsers);
+
+                 // Reload layout scripts
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
             }
 
             await JS.InvokeVoidAsync("adminAssetManager.hideLoader");

@@ -126,4 +126,50 @@ code {
     z-index: 1050 !important;
 }
 
+/* ============================================
+   MENU ACTIVE STYLES - THEO TEMPLATE GỐC
+   CHÚ Ý: Không dùng !important để theme có thể override
+   ============================================ */
+
+/* Active main menu item (Dashboard, menu cha) */
+.pcoded-navbar .pcoded-item > li.active > a {
+    font-weight: 600;
+}
+
+.pcoded-navbar .pcoded-item > li.active > a .pcoded-mtext {
+    font-weight: 600;
+}
+
+/* Active submenu item */
+.pcoded-navbar .pcoded-submenu > li.active > a {
+    font-weight: 600;
+}
+
+/* Parent menu active (khi child active) - chỉ giữ font weight */
+.pcoded-navbar .pcoded-hasmenu.active > a {
+    font-weight: 600;
+}
+
+/* Dropdown toggle icon */
+.pcoded-navbar .pcoded-hasmenu > a::after {
+    content: '\f107';
+    font-family: 'FontAwesome', 'feather';
+    position: absolute;
+    right: 20px;
+    transition: transform 0.3s ease;
+}
+
+.pcoded-navbar .pcoded-hasmenu.pcoded-trigger > a::after {
+    transform: rotate(180deg);
+}
+
+/* Hover effects */
+.pcoded-navbar .pcoded-item > li:hover > a {
+    background-color: rgba(68, 138, 255, 0.05);
+}
+
+.pcoded-navbar .pcoded-submenu > li:hover > a {
+    color: #448aff;
+}
+
 

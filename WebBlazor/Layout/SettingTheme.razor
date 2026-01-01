@@ -1,6 +1,7 @@
 ﻿@inject IJSRuntime JS
 @inject WebBlazor.Services.ThemeService ThemeService
 @inject WebBlazor.Services.NotificationService NotificationService
+
 <div id="styleSelector">
 
     <!-- Toggle -->
@@ -291,9 +292,6 @@
 
 
 @code {
-
-
-
     bool FixedSidebar = true;
     bool FixedHeader = true;
     string MenuType = "st6";
@@ -313,7 +311,6 @@
             await LoadThemeFromDatabase();
 
             // FORCE re-apply sau 500ms để override vartical-layout.min.js
-            // await Task.Delay(500);
             await ForceReapplyTheme();
         }
     }
@@ -396,10 +393,6 @@
             currentSettings.IsFixedSidebar = FixedSidebar;
             currentSettings.IsFixedHeader = FixedHeader;
             currentSettings.MenuType = MenuType;
-
-             
-            
-            
 
             // Lưu vào database
             var success = await ThemeService.SaveThemeAsync(currentSettings);
