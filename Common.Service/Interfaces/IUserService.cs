@@ -1,17 +1,17 @@
 ﻿using Common.Model.Auth;
 using Common.Model.Common;
-using Common.Model.User;
+using Common.Model.UsUser;
 
 namespace Common.Service.Interfaces
 {
     public interface IUserService
     {
-        Task<IEnumerable<UserDto>> GetAllAsync();
+        Task<IEnumerable<UsUserViewModel>> GetAllAsync();
         //  Thêm method mới cho pagination
-        Task<PaginatedResponse<UserDto>> GetPaginatedAsync(PaginatedRequest request);
-        Task<UserDto?> GetByIdAsync(string id);
-        Task<UserDto> CreateAsync(CreateUserRequest request);
-        Task<UserDto> UpdateAsync(string id, UpdateUserRequest request);
+        Task<PaginatedResponse<UsUserViewModel>> GetPaginatedAsync(PaginatedRequest request);
+        Task<UsUserViewModel?> GetByIdAsync(string id);
+        Task<UsUserViewModel> CreateAsync(UsUserCreateModel request);
+        Task<UsUserViewModel> UpdateAsync(string id, UsUserUpdateModel request);
         Task DeleteAsync(string id);
         Task<LoginResponse> LoginAsync(LoginRequest request);
     }

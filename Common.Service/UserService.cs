@@ -4,8 +4,8 @@ using Common.Library.Constant;
 using Common.Library.Helper;
 using Common.Model.Auth;
 using Common.Model.Common;
-using Common.Model.User;
 using Common.Model.UsUser;
+
 using Common.Service.Common;
 using Common.Service.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -23,7 +23,7 @@ namespace Common.Service
     /// <summary>
     /// Service cho User - wrap UsUserService để implement IUserService với async methods
     /// </summary>
-    public class UserService : BaseService, IUserService
+    public class UserService : BaseService
     {
         private readonly IConfiguration _config;
         private readonly UsUserService _usUserService;
@@ -36,14 +36,14 @@ namespace Common.Service
             _usUserService = new UsUserService(dbContext, mapper); // ✅ Truyền dependencies
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllAsync()
+        public async Task<IEnumerable<UsUserViewModel>> GetAllAsync()
         {
             return await Task.Run(() =>
             {
                 var result = _usUserService.GetAll();
                 if (result.IsSuccess && result.Data != null)
                 {
-                    return result.Data.Select(x => new UserDto
+                    return result.Data.Select(x => new UsUserViewModel
                     {
                         Id = x.Id ?? string.Empty,
                         GroupId = x.GroupId ?? string.Empty,
@@ -52,7 +52,7 @@ namespace Common.Service
                         UserName = x.UserName ?? string.Empty,
                         Email = x.Email,
                         Phone = x.Phone,
-                        Cmnd = x.CMND,
+                        CMND = x.CMND,
                         Address = x.Address,
                         Image = x.Image,
                         Note = x.Note,
@@ -63,11 +63,11 @@ namespace Common.Service
                         UpdatedBy = x.UpdatedBy ?? string.Empty
                     }).ToList();
                 }
-                return new List<UserDto>();
+                return new List<UsUserViewModel>();
             });
         }
 
-        public async Task<UserDto?> GetByIdAsync(string id)
+        public async Task<UsUserViewModel?> GetByIdAsync(string id)
         {
             return await Task.Run(() =>
             {
@@ -75,7 +75,7 @@ namespace Common.Service
                 if (result.IsSuccess && result.Data != null)
                 {
                     var x = result.Data;
-                    return new UserDto
+                    return new UsUserViewModel
                     {
                         Id = x.Id ?? string.Empty,
                         GroupId = x.GroupId ?? string.Empty,
@@ -84,7 +84,7 @@ namespace Common.Service
                         UserName = x.UserName ?? string.Empty,
                         Email = x.Email,
                         Phone = x.Phone,
-                        Cmnd = x.CMND,
+                        CMND = x.CMND,
                         Address = x.Address,
                         Image = x.Image,
                         Note = x.Note,
@@ -99,16 +99,16 @@ namespace Common.Service
             });
         }
 
-        public async Task<PaginatedResponse<UserDto>> GetPaginatedAsync(PaginatedRequest request)
+        public async Task<PaginatedResponse<UsUserViewModel>> GetPaginatedAsync(PaginatedRequest request)
         {
             return await Task.Run(() =>
             {
                 var allResult = _usUserService.GetAll();
                 if (!allResult.IsSuccess || allResult.Data == null)
                 {
-                    return new PaginatedResponse<UserDto>
+                    return new PaginatedResponse<UsUserViewModel>
                     {
-                        Items = new List<UserDto>(),
+                        Items = new List<UsUserViewModel>(),
                         TotalRecords = 0,
                         PageNumber = request.PageNumber,
                         PageSize = request.PageSize
@@ -153,7 +153,7 @@ namespace Common.Service
                 var items = query
                     .Skip((request.PageNumber - 1) * request.PageSize)
                     .Take(request.PageSize)
-                    .Select(x => new UserDto
+                    .Select(x => new UsUserViewModel
                     {
                         Id = x.Id ?? string.Empty,
                         GroupId = x.GroupId ?? string.Empty,
@@ -162,7 +162,7 @@ namespace Common.Service
                         UserName = x.UserName ?? string.Empty,
                         Email = x.Email,
                         Phone = x.Phone,
-                        Cmnd = x.CMND,
+                        CMND = x.CMND,
                         Address = x.Address,
                         Image = x.Image,
                         Note = x.Note,
@@ -174,7 +174,7 @@ namespace Common.Service
                     })
                     .ToList();
 
-                return new PaginatedResponse<UserDto>
+                return new PaginatedResponse<UsUserViewModel>
                 {
                     Items = items,
                     TotalRecords = totalRecords,
@@ -184,7 +184,7 @@ namespace Common.Service
             });
         }
 
-        public async Task<UserDto> CreateAsync(CreateUserRequest request)
+        public async Task<UsUserViewModel> CreateAsync(UsUserCreateModel request)
         {
             return await Task.Run(() =>
             {
@@ -197,7 +197,7 @@ namespace Common.Service
                     Password = request.Password,
                     Email = request.Email,
                     Phone = request.Phone,
-                    CMND = request.Cmnd,
+                    CMND = request.CMND,
                     Address = request.Address,
                     Note = request.Note
                 };
@@ -215,7 +215,7 @@ namespace Common.Service
                 }
 
                 var x = result.Data;
-                return new UserDto
+                return new UsUserViewModel
                 {
                     Id = x.Id ?? string.Empty,
                     GroupId = x.GroupId ?? string.Empty,
@@ -224,7 +224,7 @@ namespace Common.Service
                     UserName = x.UserName ?? string.Empty,
                     Email = x.Email,
                     Phone = x.Phone,
-                    Cmnd = x.CMND,
+                    CMND = x.CMND,
                     Address = x.Address,
                     Image = x.Image,
                     Note = x.Note,
@@ -237,7 +237,7 @@ namespace Common.Service
             });
         }
 
-        public async Task<UserDto> UpdateAsync(string id, UpdateUserRequest request)
+        public async Task<UsUserViewModel> UpdateAsync(string id, UsUserUpdateModel request)
         {
             return await Task.Run(() =>
             {
@@ -249,7 +249,7 @@ namespace Common.Service
                     Gender = request.Gender,
                     Email = request.Email,
                     Phone = request.Phone,
-                    CMND = request.Cmnd,
+                    CMND = request.CMND,
                     Address = request.Address,
                     Image = request.Image,
                     Note = request.Note
@@ -271,7 +271,7 @@ namespace Common.Service
                 if (getResult.IsSuccess && getResult.Data != null)
                 {
                     var x = getResult.Data;
-                    return new UserDto
+                    return new UsUserViewModel
                     {
                         Id = x.Id,
                         GroupId = x.GroupId,
@@ -280,7 +280,7 @@ namespace Common.Service
                         UserName = x.UserName,
                         Email = x.Email,
                         Phone = x.Phone,
-                        Cmnd = x.CMND,
+                        CMND = x.CMND,
                         Address = x.Address,
                         Image = x.Image,
                         Note = x.Note,

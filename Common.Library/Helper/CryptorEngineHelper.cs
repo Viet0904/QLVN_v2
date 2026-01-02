@@ -62,25 +62,64 @@ namespace Common.Library.Helper
                 return string.Empty;
             }
         }
+        // Hàm Cách cũ
+        //public static string Decrypt(string cipherText, byte[] keyBytes, string initVector)
+        //{
+        //    byte[] initVectorBytes = Encoding.ASCII.GetBytes(initVector);
+        //    byte[] cipherTextBytes = Convert.FromBase64String(cipherText);
+        //    using (Aes symmetricKey = Aes.Create())
+        //    {
+        //        symmetricKey.Mode = CipherMode.CBC;
+        //        ICryptoTransform decryptor = symmetricKey.CreateDecryptor(keyBytes, initVectorBytes);
+        //        using (MemoryStream memoryStream = new MemoryStream(cipherTextBytes))
+        //        {
+        //            using (CryptoStream cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+        //            {
+        //                byte[] plainTextBytes = new byte[cipherTextBytes.Length];
+        //                int decryptedByteCount = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length);
+        //                string plainText = Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount);
+        //                return plainText;
+        //            }
+        //        }
+        //    }
+        //}
 
+        // Cải tiến hàm Decrypt để sử dụng StreamReader, giúp đọc toàn bộ dữ liệu dễ dàng hơn
         public static string Decrypt(string cipherText, byte[] keyBytes, string initVector)
         {
-            byte[] initVectorBytes = Encoding.ASCII.GetBytes(initVector);
-            byte[] cipherTextBytes = Convert.FromBase64String(cipherText);
-            using (Aes symmetricKey = Aes.Create())
+            if (string.IsNullOrEmpty(cipherText)) return string.Empty;
+
+            try
             {
-                symmetricKey.Mode = CipherMode.CBC;
-                ICryptoTransform decryptor = symmetricKey.CreateDecryptor(keyBytes, initVectorBytes);
-                using (MemoryStream memoryStream = new MemoryStream(cipherTextBytes))
+                byte[] initVectorBytes = Encoding.ASCII.GetBytes(initVector);
+                byte[] cipherTextBytes = Convert.FromBase64String(cipherText);
+
+                using (Aes symmetricKey = Aes.Create())
                 {
-                    using (CryptoStream cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+                    // Đảm bảo các thiết lập đồng nhất với bên Encrypt
+                    symmetricKey.Mode = CipherMode.CBC;
+                    symmetricKey.Padding = PaddingMode.PKCS7;
+
+                    using (ICryptoTransform decryptor = symmetricKey.CreateDecryptor(keyBytes, initVectorBytes))
                     {
-                        byte[] plainTextBytes = new byte[cipherTextBytes.Length];
-                        int decryptedByteCount = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length);
-                        string plainText = Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount);
-                        return plainText;
+                        using (MemoryStream memoryStream = new MemoryStream(cipherTextBytes))
+                        {
+                            using (CryptoStream cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+                            {
+                                // SỬ DỤNG StreamReader để đọc toàn bộ stream thay vì dùng cryptoStream.Read thủ công
+                                using (StreamReader streamReader = new StreamReader(cryptoStream, Encoding.UTF8))
+                                {
+                                    return streamReader.ReadToEnd();
+                                }
+                            }
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nếu cần thiết
+                throw new Exception("Lỗi giải mã dữ liệu: " + ex.Message);
             }
         }
     }

@@ -1,9 +1,10 @@
 ﻿@page "/system_user"
-@using Common.Model.User
-@using Common.Model.Group
+@using Common.Model
+@using Common.Model.UsUser
+@using Common.Model.UsGroup
 @using Common.Model.Common
+
 @using WebBlazor.Services
-@using WebBlazor.Models
 @using Microsoft.AspNetCore.Components.Forms
 @inject AuthenticationStateProvider AuthStateProvider
 @using Microsoft.AspNetCore.Components.Authorization
@@ -116,7 +117,7 @@
 </div>
 
 <!-- User Modal Component -->
-<UserModal UserModel="userFormModel"
+<UserModal UserModel="UsUserFormModel"
            IsEditMode="isEditMode"
            IsProcessing="isProcessing"
            DeleteUserId="deleteUserId"
@@ -132,10 +133,10 @@
 
 @code {
     // State cho pagination
-    private PaginatedResponse<UserDto> paginatedUsers = new();
+    private PaginatedResponse<UsUserViewModel> paginatedUsers = new();
     private PaginatedRequest paginationRequest = new() { PageNumber = 1, PageSize = 10 };
 
-    private List<GroupDto> allGroups = new();
+    private List<UsGroupViewModel> allGroups = new();
     private bool isLoading = true;
     private bool dataTableInitialized = false;
     private bool layoutInitialized = false;
@@ -153,7 +154,7 @@
     private ElementReference tableContainerRef;
 
     // Modal states
-    private UserFormModel userFormModel = new();
+    private UsUserFormModel UsUserFormModel = new();
     private bool isEditMode = false;
     private bool isProcessing = false;
     private string deleteUserId = string.Empty;
@@ -379,17 +380,17 @@
     private async Task OpenAddModal()
     {
         isEditMode = false;
-        userFormModel = new UserFormModel { RowStatus = 1, ChangePassword = false };
+        UsUserFormModel = new UsUserFormModel { RowStatus = 1, ChangePassword = false };
         password = string.Empty;
         confirmPassword = string.Empty;
         StateHasChanged();
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
     }
 
-    private async Task OpenEditModal(UserDto user)
+    private async Task OpenEditModal(UsUserViewModel user)
     {
         isEditMode = true;
-        userFormModel = new UserFormModel
+        UsUserFormModel = new UsUserFormModel
         {
             Id = user.Id,
             Name = user.Name,
@@ -398,7 +399,7 @@
             Email = user.Email,
             Phone = user.Phone,
             Gender = user.Gender,
-            Cmnd = user.Cmnd,
+            CMND = user.CMND,
             Address = user.Address,
             Image = user.Image,
             Note = user.Note,
@@ -431,7 +432,7 @@
         }
     }
 
-    private async Task OpenDeleteModal(UserDto user)
+    private async Task OpenDeleteModal(UsUserViewModel user)
     {
         deleteUserId = user.Id;
         deleteUserName = user.Name;
@@ -445,7 +446,7 @@
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
         await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
 
-        userFormModel = new UserFormModel();
+        UsUserFormModel = new UsUserFormModel();
         password = string.Empty;
         confirmPassword = string.Empty;
         deleteUserId = string.Empty;
@@ -470,19 +471,19 @@
         try
         {
             // Validation cơ bản
-            if (string.IsNullOrWhiteSpace(userFormModel.Name))
+            if (string.IsNullOrWhiteSpace(UsUserFormModel.Name))
             {
                 await ShowNotification("error", "Vui lòng nhập tên người dùng!");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(userFormModel.UserName))
+            if (string.IsNullOrWhiteSpace(UsUserFormModel.UserName))
             {
                 await ShowNotification("error", "Vui lòng nhập tên đăng nhập!");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(userFormModel.GroupId))
+            if (string.IsNullOrWhiteSpace(UsUserFormModel.GroupId))
             {
                 await ShowNotification("error", "Vui lòng chọn nhóm!");
                 return;
@@ -504,19 +505,19 @@
                 }
 
                 // CREATE
-                var createRequest = new CreateUserRequest
+                var createRequest = new UsUserCreateModel
                 {
-                    Name = userFormModel.Name,
-                    UserName = userFormModel.UserName,
+                    Name = UsUserFormModel.Name,
+                    UserName = UsUserFormModel.UserName,
                     Password = password,
-                    GroupId = userFormModel.GroupId,
-                    Email = userFormModel.Email,
-                    Phone = userFormModel.Phone,
-                    Gender = userFormModel.Gender,
-                    Cmnd = userFormModel.Cmnd,
-                    Address = userFormModel.Address,
-                    Note = userFormModel.Note,
-                    RowStatus = userFormModel.RowStatus
+                    GroupId = UsUserFormModel.GroupId,
+                    Email = UsUserFormModel.Email,
+                    Phone = UsUserFormModel.Phone,
+                    Gender = UsUserFormModel.Gender,
+                    CMND = UsUserFormModel.CMND,
+                    Address = UsUserFormModel.Address,
+                    Note = UsUserFormModel.Note,
+                    RowStatus = UsUserFormModel.RowStatus
                 };
 
                 var newUser = await UserService.CreateUserAsync(createRequest);
@@ -527,7 +528,7 @@
                     await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
 
                     // Reset form
-                    userFormModel = new UserFormModel();
+                    UsUserFormModel = new UsUserFormModel();
                     password = string.Empty;
                     confirmPassword = string.Empty;
 
@@ -551,25 +552,25 @@
             else
             {
                 // UPDATE
-                var updateRequest = new UpdateUserRequest
+                var updateRequest = new UsUserUpdateModel
                 {
-                    Id = userFormModel.Id,
-                    Name = userFormModel.Name,
-                    UserName = userFormModel.UserName,
-                    GroupId = userFormModel.GroupId,
-                    Email = userFormModel.Email,
-                    Phone = userFormModel.Phone,
-                    Gender = userFormModel.Gender,
-                    Cmnd = userFormModel.Cmnd,
-                    Address = userFormModel.Address,
-                    Note = userFormModel.Note,
-                    RowStatus = userFormModel.RowStatus,
-                    ChangePassword = userFormModel.ChangePassword,
-                    Password = userFormModel.ChangePassword ? password : null
+                    Id = UsUserFormModel.Id,
+                    Name = UsUserFormModel.Name,
+                    UserName = UsUserFormModel.UserName,
+                    GroupId = UsUserFormModel.GroupId,
+                    Email = UsUserFormModel.Email,
+                    Phone = UsUserFormModel.Phone,
+                    Gender = UsUserFormModel.Gender,
+                    CMND = UsUserFormModel.CMND,
+                    Address = UsUserFormModel.Address,
+                    Note = UsUserFormModel.Note,
+                    RowStatus = UsUserFormModel.RowStatus,
+                    IsChangePassword = UsUserFormModel.ChangePassword,
+                    Password = UsUserFormModel.ChangePassword ? password : null
                 };
 
                 // Validation cho password nếu chọn đổi
-                if (updateRequest.ChangePassword)
+                if (updateRequest.IsChangePassword == true)
                 {
                     if (string.IsNullOrWhiteSpace(password))
                     {
@@ -592,10 +593,10 @@
                     await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
 
                     // Lưu userId để dùng cho animation
-                    var updatedUserId = userFormModel.Id;
+                    var updatedUserId = UsUserFormModel.Id;
                     
                     // Reset form
-                    userFormModel = new UserFormModel();
+                    UsUserFormModel = new UsUserFormModel();
                     password = string.Empty;
                     confirmPassword = string.Empty;
 

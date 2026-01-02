@@ -1,9 +1,9 @@
-﻿using Common.Model.Group;
+﻿using Common.Model.UsGroup;
 
 namespace Common.Service.Interfaces
 {
     public interface IGroupService
     {
-        Task<IEnumerable<GroupDto>> GetAllAsync();
+        Task<IEnumerable<UsGroupViewModel>> GetAllAsync();
     }
 }

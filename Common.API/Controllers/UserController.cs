@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Common.Service;
 using Common.Model.Common;
-using Common.Model.User;
+using Common.Model.UsUser;
 
 namespace Common.API.Controllers
 {
@@ -71,7 +71,7 @@ namespace Common.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
+        public async Task<IActionResult> Create([FromBody] UsUserCreateModel request)
         {
             try
             {
@@ -91,7 +91,7 @@ namespace Common.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] UpdateUserRequest request)
+        public async Task<IActionResult> Update(string id, [FromBody] UsUserUpdateModel request)
         {
             try
             {

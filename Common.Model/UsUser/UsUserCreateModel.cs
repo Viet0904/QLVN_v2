@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Common.Model.Common;
 namespace Common.Model.UsUser
 {
-    public class UsUserCreateModel
+    public class UsUserCreateModel : BaseViewModel
     {
         public string GroupId { get; set; } = null!;
         public string Name { get; set; } = null!;

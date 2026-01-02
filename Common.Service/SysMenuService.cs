@@ -117,14 +117,14 @@ namespace Common.Service
             // Validate Name
             if (string.IsNullOrWhiteSpace(model.Name))
             {
-                res.ErrorMessage = MessageConstant.MENU_NAME_REQUIRED;
+                res.ErrorMessage = MessageConstant.EXIST;
                 return res;
             }
 
             // Validate Note
             if (string.IsNullOrWhiteSpace(model.Note))
             {
-                res.ErrorMessage = MessageConstant.MENU_NOTE_REQUIRED;
+                res.ErrorMessage = MessageConstant.EXIST;
                 return res;
             }
 
@@ -135,7 +135,7 @@ namespace Common.Service
 
             if (existingMenu != null)
             {
-                res.ErrorMessage = MessageConstant.MENU_NAME_EXIST;
+                res.ErrorMessage = MessageConstant.EXIST;
                 return res;
             }
 
@@ -148,7 +148,7 @@ namespace Common.Service
 
                 if (parentMenu == null)
                 {
-                    res.ErrorMessage = MessageConstant.MENU_PARENT_NOT_EXIST;
+                    res.ErrorMessage = MessageConstant.EXIST;
                     return res;
                 }
             }
@@ -167,7 +167,7 @@ namespace Common.Service
                 DbContext.SaveChanges();
 
                 res = GetById(item.Name);
-                res.Message = MessageConstant.MENU_CREATED_SUCCESS;
+                res.Message = MessageConstant.CREATED_SUCCESS;
             }
             catch (Exception e)
             {
@@ -188,14 +188,14 @@ namespace Common.Service
             // Validate Name
             if (string.IsNullOrWhiteSpace(model.Name))
             {
-                res.ErrorMessage = MessageConstant.MENU_NAME_REQUIRED;
+                res.ErrorMessage = MessageConstant.EXIST;
                 return res;
             }
 
             // Validate Note
             if (string.IsNullOrWhiteSpace(model.Note))
             {
-                res.ErrorMessage = MessageConstant.MENU_NOTE_REQUIRED;
+                res.ErrorMessage = MessageConstant.EXIST;
                 return res;
             }
 
@@ -216,7 +216,7 @@ namespace Common.Service
 
                         if (parentMenu == null)
                         {
-                            res.ErrorMessage = MessageConstant.MENU_PARENT_NOT_EXIST;
+                            res.ErrorMessage = MessageConstant.EXIST;
                             return res;
                         }
                     }
@@ -229,7 +229,7 @@ namespace Common.Service
 
                     DbContext.SaveChanges();
                     res.Data = true;
-                    res.Message = MessageConstant.MENU_UPDATED_SUCCESS;
+                    res.Message = MessageConstant.UPDATED_SUCCESS;
                 }
                 else
                 {
@@ -272,7 +272,7 @@ namespace Common.Service
                 result.IsActive = 0;
                 DbContext.SaveChanges();
                 res.Data = true;
-                res.Message = MessageConstant.MENU_DELETED_SUCCESS;
+                res.Message = MessageConstant.DELETED_SUCCESS;
             }
             else
             {

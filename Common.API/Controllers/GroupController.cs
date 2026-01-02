@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Common.Service;
-
+using Common.Library.Constant;
 namespace Common.API.Controllers;
 
 [Route("api/[controller]")]
@@ -23,14 +23,50 @@ public class GroupController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("GetAll groups called");
+           
             var result = await _groupService.GetAllAsync();
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all groups");
-            return StatusCode(500, new { message = "Lỗi khi lấy danh sách nhóm", error = ex.Message });
+            return StatusCode(500, new { MessageConstant.NOT_EXIST, error = ex.Message });
+
         }
     }
+    [HttpGet]
+    public async Task<IActionResult> GetById(string id)
+    {
+        try
+        {
+            var result = _groupService.GetById(id);
+            if (!result.IsSuccess)
+            {
+                return NotFound(result);
+            }
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] Common.Model.UsGroup.UsGroupViewModel model)
+    {
+        try
+        {
+            var result = _groupService.Create(model);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
+
 }

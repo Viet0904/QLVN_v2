@@ -5,7 +5,7 @@ using Common.Library.Extension;
 using Common.Library.Helper;
 using Common.Model.UsUser;
 using Common.Model.SysMenu;
-using Common.Model.Group;
+using Common.Model.UsGroup;
 using System.Linq;
 
 namespace Common.Service.Common
@@ -65,11 +65,20 @@ namespace Common.Service.Common
 
             #region UsGroup
             
-            cfg.CreateMap<UsGroup, GroupDto>();
+            cfg.CreateMap<UsGroup, UsGroupViewModel>()
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.CreatedAt)))
+                .ForMember(dest => dest.CreatedName, opt => opt.MapFrom(src => FormatUser(src.CreatedBy, context)))
+                .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.UpdatedAt)))
+                .ForMember(dest => dest.UpdatedName, opt => opt.MapFrom(src => FormatUser(src.UpdatedBy, context)));
 
+            //cfg.CreateMap<UsGroupCreateModel, UsGroup>()
+            //    .IgnoreAllNonExisting();
+
+            //cfg.CreateMap<UsGroupUpdateModel, UsGroup>()
+            //    .IgnoreAllNonExisting();
             #endregion
 
-            
+
         }
 
         // Helper method - Format user name

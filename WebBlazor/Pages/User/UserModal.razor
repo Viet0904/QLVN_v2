@@ -1,6 +1,6 @@
-﻿@using Common.Model.User
-@using Common.Model.Group
-@using WebBlazor.Models
+﻿@using Common.Model.UsUser
+@using Common.Model.UsGroup
+@using Common.Model.Common
 @inject IJSRuntime JS
 
 <!-- Add/Edit User Modal -->
@@ -61,7 +61,7 @@
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label>CMND/CCCD</label>
-                                        <InputText @bind-Value="UserModel.Cmnd" class="form-control" placeholder="Nhập CMND/CCCD" />
+                                        <InputText @bind-Value="UserModel.CMND" class="form-control" placeholder="Nhập CMND/CCCD" />
                                     </div>
                                 </div>
                             </div>
@@ -281,12 +281,12 @@
 </style>
 
 @code {
-    [Parameter] public UserFormModel UserModel { get; set; } = new();
+    [Parameter] public UsUserFormModel UserModel { get; set; } = new();
     [Parameter] public bool IsEditMode { get; set; }
     [Parameter] public bool IsProcessing { get; set; }
     [Parameter] public string DeleteUserId { get; set; } = string.Empty;
     [Parameter] public string DeleteUserName { get; set; } = string.Empty;
-    [Parameter] public List<GroupDto>? Groups { get; set; }
+    [Parameter] public List<UsGroupViewModel>? Groups { get; set; }
 
     // Two-way binding cho Password
     [Parameter] public string Password { get; set; } = string.Empty;

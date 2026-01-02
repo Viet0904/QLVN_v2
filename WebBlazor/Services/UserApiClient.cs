@@ -1,6 +1,6 @@
 ﻿using Common.Model.Common;
-using Common.Model.Group;
-using Common.Model.User;
+using Common.Model.UsGroup;
+using Common.Model.UsUser;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -19,12 +19,12 @@ public class UserApiClient
 
     #region User Methods
 
-    public async Task<List<UserDto>> GetUserAllSync()
+    public async Task<List<UsUserViewModel>> GetUserAllSync()
     {
         try
         {
             _logger.LogInformation("Fetching users from API...");
-            var response = await _httpClient.GetFromJsonAsync<List<UserDto>>("api/User");
+            var response = await _httpClient.GetFromJsonAsync<List<UsUserViewModel>>("api/User");
             _logger.LogInformation("Users fetched successfully.");
             return response ?? new();
         }
@@ -40,7 +40,7 @@ public class UserApiClient
         }
     }
 
-    public async Task<UserDto?> GetByIdAsync(string id)
+    public async Task<UsUserViewModel?> GetByIdAsync(string id)
     {
         try
         {
@@ -50,7 +50,7 @@ public class UserApiClient
                 var content = await response.Content.ReadAsStringAsync();
                 if (!string.IsNullOrWhiteSpace(content))
                 {
-                    return JsonSerializer.Deserialize<UserDto>(content, new JsonSerializerOptions
+                    return JsonSerializer.Deserialize<UsUserViewModel>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
@@ -64,7 +64,7 @@ public class UserApiClient
             return null;
         }
     }
-    public async Task<PaginatedResponse<UserDto>> GetPaginatedUsersAsync(PaginatedRequest request)
+    public async Task<PaginatedResponse<UsUserViewModel>> GetPaginatedUsersAsync(PaginatedRequest request)
     {
         try
         {
@@ -84,20 +84,20 @@ public class UserApiClient
                               $"&SortDirection={request.SortDirection}";
             }
 
-            var response = await _httpClient.GetFromJsonAsync<PaginatedResponse<UserDto>>(
+            var response = await _httpClient.GetFromJsonAsync<PaginatedResponse<UsUserViewModel>>(
                 $"api/User/paginated{queryString}"
             );
 
             _logger.LogInformation("Paginated users fetched successfully.");
-            return response ?? new PaginatedResponse<UserDto>();
+            return response ?? new PaginatedResponse<UsUserViewModel>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching paginated users");
-            return new PaginatedResponse<UserDto>();
+            return new PaginatedResponse<UsUserViewModel>();
         }
     }
-    public async Task<UserDto?> CreateUserAsync(CreateUserRequest request)
+    public async Task<UsUserViewModel?> CreateUserAsync(UsUserCreateModel request)
     {
         try
         {
@@ -108,7 +108,7 @@ public class UserApiClient
                 var content = await response.Content.ReadAsStringAsync();
                 if (!string.IsNullOrWhiteSpace(content))
                 {
-                    return JsonSerializer.Deserialize<UserDto>(content, new JsonSerializerOptions
+                    return JsonSerializer.Deserialize<UsUserViewModel>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
@@ -137,7 +137,7 @@ public class UserApiClient
         }
     }
 
-    public async Task<UserDto?> UpdateUserAsync(UpdateUserRequest request)
+    public async Task<UsUserViewModel?> UpdateUserAsync(UsUserUpdateModel request)
     {
         try
         {
@@ -148,13 +148,13 @@ public class UserApiClient
                 var content = await response.Content.ReadAsStringAsync();
                 if (!string.IsNullOrWhiteSpace(content))
                 {
-                    return JsonSerializer.Deserialize<UserDto>(content, new JsonSerializerOptions
+                    return JsonSerializer.Deserialize<UsUserViewModel>(content, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
                 }
                 // Nếu không có content, trả về object với data từ request
-                return new UserDto
+                return new UsUserViewModel
                 {
                     Id = request.Id,
                     Name = request.Name ?? string.Empty,
@@ -162,7 +162,7 @@ public class UserApiClient
                     Email = request.Email,
                     Phone = request.Phone,
                     Gender = request.Gender,
-                    Cmnd = request.Cmnd,
+                    CMND = request.CMND,
                     Address = request.Address,
                     Note = request.Note,
                     RowStatus = request.RowStatus
@@ -227,12 +227,12 @@ public class UserApiClient
 
     #region Group Methods
 
-    public async Task<List<GroupDto>> GetAllGroupsAsync()
+    public async Task<List<UsGroupViewModel>> GetAllGroupsAsync()
     {
         try
         {
             _logger.LogInformation("Fetching groups from API...");
-            var response = await _httpClient.GetFromJsonAsync<List<GroupDto>>("api/Group");
+            var response = await _httpClient.GetFromJsonAsync<List<UsGroupViewModel>>("api/Group");
             _logger.LogInformation("Groups fetched successfully.");
             return response ?? new();
         }

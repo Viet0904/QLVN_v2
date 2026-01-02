@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebBlazor.Models;
+namespace Common.Model.UsUser;
 
-public class UserFormModel
+public class UsUserFormModel
 {
     public string Id { get; set; } = string.Empty;
 

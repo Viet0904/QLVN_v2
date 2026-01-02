@@ -54,21 +54,10 @@ namespace Common.Service
         {
             ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
 
-            var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
+            password = PasswordHelper.CreatePassword(password);
 
-            if (result != null)
-            {
-                string decryptedPassword = CryptorEngineHelper.Decrypt(result.Password);
-
-                if (decryptedPassword == password)
-                {
-                    res.Data = Mapper.Map<UsUserViewModel>(result);
-                }
-                else
-                {
-                    res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
-                }
-            }
+            var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.Password == password && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
+            if (result != null) res.Data = Mapper.Map<UsUserViewModel>(result);
             else
             {
                 res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
