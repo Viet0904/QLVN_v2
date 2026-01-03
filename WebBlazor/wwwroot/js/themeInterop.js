@@ -116,33 +116,30 @@
             pcoded.classList.add('pcoded-fixed-header');
             header.setAttribute('pcoded-header-position', 'fixed');
             if (navbar) navbar.setAttribute('pcoded-header-position', 'fixed');
-
-            // Ensure observer is active so if another script writes inline styles we remove its margin-top soon after
-            this._ensureMarginObserver();
-
-            // Remove any existing inline margin — let CSS control layout
-            this._removeMainContainerInlineMargin();
+            header.style.position = ''; // Clear inline position
         } else {
             pcoded.classList.remove('pcoded-fixed-header');
             header.setAttribute('pcoded-header-position', 'relative');
             if (navbar) navbar.setAttribute('pcoded-header-position', 'relative');
+            header.style.position = ''; // Clear inline position
 
-            // Remove inline margin on relative header too
-            this._removeMainContainerInlineMargin();
 
             // When header = relative and sidebar = fixed, keep navbar absolute if needed
             try {
                 if (navbar) {
                     const navbarPosition = navbar.getAttribute('pcoded-navbar-position');
                     if (navbarPosition === 'fixed') {
-                        const isSidebarFixed = pcoded.classList.contains('pcoded-fixed-sidebar');
-                        if (isSidebarFixed) {
-                            navbar.style.position = 'absolute';
-                        }
+                        navbar.style.position = 'absolute';
                     }
                 }
             } catch (e) { /* ignore */ }
         }
+
+        // Always remove any existing inline margin — let CSS rules in app.css take control
+        this._removeMainContainerInlineMargin();
+        
+        // Ensure observer is active to fight off other scripts trying to re-add margins
+        this._ensureMarginObserver();
     },
 
     setMenuType: function (type) {

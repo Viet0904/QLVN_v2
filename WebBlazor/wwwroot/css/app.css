@@ -172,4 +172,47 @@ code {
     color: #448aff;
 }
 
+/* ============================================
+   FIXED HEADER LAYOUT STABILIZATION
+   ============================================ */
+
+/* Fix layout jump — override aggressive fixed position in style.css */
+.header-navbar[pcoded-header-position="relative"] {
+    position: relative !important;
+}
+
+/* Stabilize main container margin and transition */
+.pcoded-main-container {
+    /* transition: margin-top 0.3s ease-in-out; REMOVED to fix jitter */
+}
+
+/* Ensure correct margin when header is fixed */
+.pcoded[pcoded-header-position="fixed"] .pcoded-main-container,
+.pcoded-fixed-header .pcoded-main-container {
+    margin-top: 56px !important;
+}
+
+/* Mobile view: Header is usually fixed by default in the template */
+@media only screen and (max-width: 992px) {
+    .pcoded-main-container {
+        margin-top: 56px !important;
+    }
+}
+
+/* Ensure overlays don't block interaction when hidden */
+.pcoded-overlay-box {
+    pointer-events: none;
+    display: none;
+}
+
+.pcoded-overlay-box.active {
+    pointer-events: auto;
+    display: block;
+}
+
+.theme-loader {
+    pointer-events: none;
+}
+
+
 

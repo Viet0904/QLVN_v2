@@ -33,8 +33,8 @@
                     <!-- Section với dropdown -->
                     <div class="pcoded-navigatio-lavel">@parentMenu.Note</div>
                     <ul class="pcoded-item pcoded-left-item">
-                        <li class="pcoded-hasmenu @(IsMenuOrChildActive(parentMenu.Name) ? "active" : "")">
-                            <a href="javascript:void(0)">
+                        <li class="pcoded-hasmenu @(IsMenuOrChildActive(parentMenu.Name) ? "active" : "") @(IsExpanded(parentMenu.Name) ? "pcoded-trigger" : "")">
+                            <a href="javascript:void(0)" @onclick="() => ToggleMenu(parentMenu.Name)">
                                 <span class="pcoded-micon"><i class="@parentMenu.Icon"></i></span>
                                 <span class="pcoded-mtext">@parentMenu.Note</span>
                             </a>
@@ -73,12 +73,14 @@
     private List<Common.Model.SysMenu.SysMenuViewModel> allMenus = new();
     private bool isLoading = true;
     private string currentUrl = "";
+    private HashSet<string> expandedMenus = new();
 
     protected override async Task OnInitializedAsync()
     {
         await LoadMenus();
         Navigation.LocationChanged += OnLocationChanged;
         UpdateCurrentUrl();
+        AutoExpandActiveMenu();
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
@@ -146,6 +148,37 @@
         
         var childMenus = GetChildMenus(menuName);
         return childMenus.Any(child => IsActive(child.Name));
+    }
+
+    private bool IsExpanded(string menuName)
+    {
+        return expandedMenus.Contains(menuName);
+    }
+
+    private void ToggleMenu(string menuName)
+    {
+        if (expandedMenus.Contains(menuName))
+        {
+            expandedMenus.Remove(menuName);
+        }
+        else
+        {
+            // Optional: Close others if desired (accordion style)
+            // expandedMenus.Clear(); 
+            expandedMenus.Add(menuName);
+        }
+    }
+
+    private void AutoExpandActiveMenu()
+    {
+        var parents = GetParentMenus();
+        foreach (var parent in parents)
+        {
+            if (IsMenuOrChildActive(parent.Name))
+            {
+                expandedMenus.Add(parent.Name);
+            }
+        }
     }
 
     public void Dispose()

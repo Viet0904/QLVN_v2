@@ -84,7 +84,7 @@ namespace Common.Service
                         if (resultIdExist != null)
                             goto generateId;
 
-                        item.Password = CryptorEngineHelper.Encrypt(model.Password);
+                        item.Password = PasswordHelper.CreatePassword(model.Password);
                         item.CreatedAt = DateTime.Now;
                         item.UpdatedAt = DateTime.Now;
                         string currentUserId = GetCurrentUserId();
@@ -115,6 +115,12 @@ namespace Common.Service
                 if (result != null)
                 {
                     Mapper.Map(model, result);
+
+                    if (model.IsChangePassword == true && !string.IsNullOrEmpty(model.Password)) 
+                    {
+                        result.Password = PasswordHelper.CreatePassword(model.Password);
+                    }
+
                     result.UpdatedAt = DateTime.Now;
                     result.UpdatedBy = GetCurrentUserId();
                     await DbContext.SaveChangesAsync();

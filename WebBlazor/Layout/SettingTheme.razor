@@ -2,11 +2,11 @@
 @inject WebBlazor.Services.ThemeService ThemeService
 @inject WebBlazor.Services.NotificationService NotificationService
 
-<div id="styleSelector">
+<div id="styleSelector" class="@(isOpen ? "open" : "")">
 
     <!-- Toggle -->
     <div class="selector-toggle">
-        <a href="javascript:void(0)"></a>
+        <a href="javascript:void(0)" @onclick="ToggleThemeSettings"></a>
     </div>
 
     <!-- Header -->
@@ -295,6 +295,14 @@
     bool FixedSidebar = true;
     bool FixedHeader = true;
     string MenuType = "st6";
+    
+    // UI State
+    bool isOpen = false;
+
+    void ToggleThemeSettings()
+    {
+        isOpen = !isOpen;
+    }
 
     bool isSaving = false;
     bool isResetting = false;
