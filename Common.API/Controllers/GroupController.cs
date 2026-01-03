@@ -121,6 +121,20 @@ public class GroupController : ControllerBase
     {
         try
         {
+            // Handle DataTables parameters if present
+            if (Request.Query.ContainsKey("start") && Request.Query.ContainsKey("length"))
+            {
+                int start = int.Parse(Request.Query["start"]!);
+                int length = int.Parse(Request.Query["length"]!);
+                pageNumber = (start / length) + 1;
+                pageSize = length;
+            }
+
+            if (Request.Query.ContainsKey("search[value]"))
+            {
+                searchTerm = Request.Query["search[value]"];
+            }
+
             var request = new PaginatedRequest
             {
                 PageNumber = pageNumber,

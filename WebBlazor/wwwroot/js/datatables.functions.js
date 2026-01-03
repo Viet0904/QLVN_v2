@@ -8,3 +8,15 @@ window.DataTableFunctions = {
                '<button class="btn btn-danger btn-sm btn-delete" data-id="' + data + '" data-name="' + row.name + '"><i class="feather icon-trash-2"></i></button>';
     }
 };
+
+// Global AJAX setup to include Auth Token for all DataTables/jQuery calls
+$.ajaxSetup({
+    beforeSend: function(xhr) {
+        var token = localStorage.getItem('authToken');
+        if (token) {
+            // Remove quotes if present (Blazored.LocalStorage might add them)
+            token = token.replace(/^"(.*)"$/, '$1');
+            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+        }
+    }
+});
