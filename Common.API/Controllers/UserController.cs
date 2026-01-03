@@ -4,18 +4,19 @@ using Microsoft.Extensions.Logging;
 using Common.Service;
 using Common.Model.Common;
 using Common.Model.UsUser;
+using Common.Library.Constant;
 
 namespace Common.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
+    [Route("api/[controller]")] // Chỉ định route cho controller
+    [ApiController] // tự động check Model State, [FromQuery], [FromBody], [FromForm], [FromRoute], [FromHeader], [FromServices].
+    [Authorize] // Chỉ cho phép người dùng đã đăng nhập truy cập
     public class UserController : ControllerBase
     {
-        private readonly UserService _userService;
+        private readonly UsUserService _userService;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(UserService uservice, ILogger<UserController> logger)
+        public UserController(UsUserService uservice, ILogger<UserController> logger)
         {
             _userService = uservice;
             _logger = logger;
@@ -26,12 +27,12 @@ namespace Common.API.Controllers
         {
             try
             {
-                return Ok(await _userService.GetAllAsync());
+                return Ok(await _userService.GetAll());
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting all users");
-                return StatusCode(500, new { message = "Lỗi khi lấy danh sách người dùng", error = ex.Message });
+                return StatusCode(500, new { message = MessageConstant.DATA_NOT_FOUND, error = ex.Message });
             }
         }
 
@@ -40,9 +41,9 @@ namespace Common.API.Controllers
         {
             try
             {
-                var user = await _userService.GetByIdAsync(id);
+                var user = await _userService.GetById(id);
                 if (user == null)
-                    return NotFound(new { message = $"Không tìm thấy người dùng với ID: {id}" });
+                    return NotFound(new { message = MessageConstant.NOT_EXIST });
                 return Ok(user);
             }
             catch (Exception ex)
@@ -60,7 +61,7 @@ namespace Common.API.Controllers
                 _logger.LogInformation("GetPaginated called with PageNumber={PageNumber}, PageSize={PageSize}",
                     request.PageNumber, request.PageSize);
 
-                var result = await _userService.GetPaginatedAsync(request);
+                var result = await _userService.GetPaginated(request);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -75,7 +76,7 @@ namespace Common.API.Controllers
         {
             try
             {
-                var newUser = await _userService.CreateAsync(request);
+                var newUser = await _userService.Create(request);
                 return StatusCode(201, newUser);
             }
             catch (InvalidOperationException ex)
@@ -95,7 +96,8 @@ namespace Common.API.Controllers
         {
             try
             {
-                var updatedUser = await _userService.UpdateAsync(id, request);
+                request.Id = id;
+                var updatedUser = await _userService.Update(request);
                 return Ok(updatedUser);
             }
             catch (KeyNotFoundException ex)
@@ -114,7 +116,7 @@ namespace Common.API.Controllers
         {
             try
             {
-                await _userService.DeleteAsync(id);
+                await _userService.Delete(id);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)

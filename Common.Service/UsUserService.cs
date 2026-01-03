@@ -3,154 +3,224 @@ using Common.Database.Data;
 using Common.Database.Entities;
 using Common.Library.Constant;
 using Common.Library.Helper;
+using Common.Model.Auth;
 using Common.Model.Common;
 using Common.Model.UsUser;
 using Common.Service.Common;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Common.Service
 {
     public class UsUserService : BaseService
     {
-        //  Constructor nhận DbContext và IMapper
-        public UsUserService(QLVN_DbContext dbContext, IMapper mapper)
+        private readonly IConfiguration _config;
+
+        //  Constructor nhận DbContext, IMapper và IConfiguration
+        public UsUserService(QLVN_DbContext dbContext, IMapper mapper, IConfiguration config)
             : base(dbContext, mapper)
         {
+            _config = config;
         }
 
-        public ResModel<List<UsUserViewModel>> GetAll()
+        public async Task<IEnumerable<UsUserViewModel>> GetAll()
         {
-            ResModel<List<UsUserViewModel>> res = new ResModel<List<UsUserViewModel>>();
-
-            var result = DbContext.UsUsers.Where(x => x.RowStatus == RowStatusConstant.Active).ToList();
-            res.Data = Mapper.Map<List<UsUserViewModel>>(result);
-
-            return res;
+            var result = await DbContext.UsUsers.Where(x => x.RowStatus == RowStatusConstant.Active).ToListAsync();
+            return Mapper.Map<List<UsUserViewModel>>(result);
         }
 
-        public ResModel<List<UsUserViewModel>> GetFull()
+        public async Task<IEnumerable<UsUserViewModel>> GetFull()
         {
-            ResModel<List<UsUserViewModel>> res = new ResModel<List<UsUserViewModel>>();
-
-            var result = DbContext.UsUsers.ToList();
-            res.Data = Mapper.Map<List<UsUserViewModel>>(result);
-
-            return res;
+            var result = await DbContext.UsUsers.ToListAsync();
+            return Mapper.Map<List<UsUserViewModel>>(result);
         }
 
-        public ResModel<UsUserViewModel> GetById(string id)
+        public async Task<UsUserViewModel> GetById(string id)
         {
-            ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
-
-            var result = DbContext.UsUsers.Where(x => x.Id == id).FirstOrDefault();
-            res.Data = Mapper.Map<UsUserViewModel>(result);
-
-            return res;
+            var result = await DbContext.UsUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
+            return Mapper.Map<UsUserViewModel>(result);
         }
 
-        public ResModel<UsUserViewModel> Login(string userName, string password)
+        public async Task<UsUserViewModel> Login(string userName, string password)
         {
-            ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
-
             password = PasswordHelper.CreatePassword(password);
 
-            var result = DbContext.UsUsers.Where(x => x.UserName == userName && x.Password == password && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
-            if (result != null) res.Data = Mapper.Map<UsUserViewModel>(result);
-            else
-            {
-                res.ErrorMessage = MessageConstant.USERNAME_PASSWORD_NOT_CORRECT;
-            }
-
-            return res;
+            var result = await DbContext.UsUsers.Where(x => x.UserName == userName && x.Password == password && x.RowStatus == RowStatusConstant.Active).FirstOrDefaultAsync();
+            if (result != null) return Mapper.Map<UsUserViewModel>(result);
+            
+            throw new Exception(MessageConstant.USERNAME_PASSWORD_NOT_CORRECT);
         }
 
-        public ResModel<UsUserViewModel> Create(UsUserCreateModel model)
+        public async Task<UsUserViewModel> Create(UsUserCreateModel model)
         {
-            ResModel<UsUserViewModel> res = new ResModel<UsUserViewModel>();
+            var result = await DbContext.UsUsers.Where(x => x.UserName == model.UserName && x.RowStatus == RowStatusConstant.Active).FirstOrDefaultAsync();
+            if (result != null)
+            {
+                throw new Exception(MessageConstant.USERNAME_EXIST);
+            }
 
-            var result = DbContext.UsUsers.Where(x => x.UserName == model.UserName && x.RowStatus == RowStatusConstant.Active).FirstOrDefault();
-            if (result == null)
+            using (var transaction = await DbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    DbContext.Database.BeginTransaction();
-
                     var item = Mapper.Map<UsUser>(model);
 
                 generateId:
                     item.Id = item.GroupId + GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
 
-                    var resultIdExist = DbContext.UsUsers.Where(x => x.Id == item.Id).FirstOrDefault();
+                    var resultIdExist = await DbContext.UsUsers.Where(x => x.Id == item.Id).FirstOrDefaultAsync();
                     if (resultIdExist != null)
                         goto generateId;
 
                     item.Password = CryptorEngineHelper.Encrypt(model.Password);
-                    DbContext.UsUsers.Add(item);
-                    DbContext.SaveChanges();
+                    await DbContext.UsUsers.AddAsync(item);
+                    await DbContext.SaveChangesAsync();
 
-                    DbContext.Database.CommitTransaction();
+                    await transaction.CommitAsync();
 
-                    res = GetById(item.Id);
+                    return await GetById(item.Id);
                 }
                 catch (Exception)
                 {
-                    DbContext.Database.RollbackTransaction();
+                    await transaction.RollbackAsync();
                     throw;
                 }
             }
-            else
-            {
-                res.ErrorMessage = "Tên đăng nhập đã tồn tại.";
-            }
-
-            return res;
         }
-
-        public ResModel<bool> Update(UsUserUpdateModel model)
+        // Update người dùng, trả về lại thông tin người dùng để Blazor cập nhật lại UI, mà không cần refresh lại trang và chỉ reload lại 1 dòng 
+        public async Task<UsUserViewModel> Update(UsUserUpdateModel model)
         {
-            ResModel<bool> res = new ResModel<bool>();
             try
             {
-                var result = DbContext.UsUsers.Where(x => x.Id == model.Id).FirstOrDefault();
+                var result = await DbContext.UsUsers.Where(x => x.Id == model.Id).FirstOrDefaultAsync();
                 if (result != null)
                 {
                     Mapper.Map(model, result);
-                    DbContext.SaveChanges();
-                    res.Data = true;
+                    await DbContext.SaveChangesAsync();
+                    return await GetById(model.Id);
                 }
                 else
                 {
-                    res.ErrorMessage = MessageConstant.NOT_EXIST;
+                    throw new Exception(MessageConstant.NOT_EXIST);
                 }
             }
             catch (Exception e)
             {
-                res.ErrorMessage = e.Message;
                 ExceptionHelper.HandleException(e);
+                throw;
             }
-
-            return res;
         }
 
-        public ResModel<bool> Delete(string id)
+        public async Task<bool> Delete(string id)
         {
-            ResModel<bool> res = new ResModel<bool>();
-
-            var result = DbContext.UsUsers.Where(x => x.Id == id).FirstOrDefault();
+            var result = await DbContext.UsUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
             if (result != null)
             {
                 result.RowStatus = RowStatusConstant.Deleted;
-                DbContext.SaveChanges();
-                res.Data = true;
+                await DbContext.SaveChangesAsync();
+                return true;
             }
             else
             {
-                res.ErrorMessage = MessageConstant.NOT_EXIST;
+                throw new Exception(MessageConstant.NOT_EXIST);
+            }
+        }
+        public async Task<PaginatedResponse<UsUserViewModel>> GetPaginated(PaginatedRequest request)
+        {
+            var allResult = await GetAll();
+            var query = allResult.AsQueryable();
+
+            // Search
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var searchLower = request.SearchTerm.ToLower();
+                query = query.Where(u =>
+                    (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
+                    (u.UserName != null && u.UserName.ToLower().Contains(searchLower)) ||
+                    (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
+                    (u.Phone != null && u.Phone.ToLower().Contains(searchLower))
+                );
             }
 
-            return res;
+            // Sort
+            query = request.SortColumn?.ToLower() switch
+            {
+                "name" => request.SortDirection == "desc"
+                    ? query.OrderByDescending(u => u.Name)
+                    : query.OrderBy(u => u.Name),
+                "username" => request.SortDirection == "desc"
+                    ? query.OrderByDescending(u => u.UserName)
+                    : query.OrderBy(u => u.UserName),
+                "email" => request.SortDirection == "desc"
+                    ? query.OrderByDescending(u => u.Email)
+                    : query.OrderBy(u => u.Email),
+                "createdat" => request.SortDirection == "desc"
+                    ? query.OrderByDescending(u => u.CreatedAt)
+                    : query.OrderBy(u => u.CreatedAt),
+                _ => query.OrderBy(u => u.Id)
+            };
+
+            var totalRecords = query.Count();
+
+            // Pagination
+            var items = query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            return new PaginatedResponse<UsUserViewModel>
+            {
+                Items = items,
+                TotalRecords = totalRecords,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            };
+        }
+
+        public async Task<LoginResponse> LoginWithToken(LoginRequest request)
+        {
+            var user = await Login(request.UserName, request.Password);
+
+            // Tạo JWT Token
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_config["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
+            
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(ClaimTypes.Name, user.UserName),
+                    new Claim("FullName", user.Name ?? string.Empty),
+                    new Claim("GroupId", user.GroupId ?? string.Empty)
+                }),
+                Expires = DateTime.UtcNow.AddHours(1),
+                Issuer = _config["JwtSettings:Issuer"],
+                Audience = _config["JwtSettings:Audience"],
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+
+            return new LoginResponse
+            {
+                Token = tokenString,
+                UserId = user.Id ?? string.Empty,
+                UserName = user.UserName ?? string.Empty,
+                FullName = user.Name ?? string.Empty,
+                GroupId = user.GroupId ?? string.Empty
+            };
         }
     }
 }

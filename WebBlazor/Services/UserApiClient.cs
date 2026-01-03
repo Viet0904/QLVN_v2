@@ -1,6 +1,7 @@
 ﻿using Common.Model.Common;
 using Common.Model.UsGroup;
 using Common.Model.UsUser;
+using Common.Model.UsUserPermission;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -240,6 +241,118 @@ public class UserApiClient
         {
             _logger.LogError(ex, "Error fetching groups");
             return new();
+        }
+    }
+
+    public async Task<PaginatedResponse<UsGroupViewModel>> GetPaginatedGroupsAsync(PaginatedRequest request)
+    {
+        try
+        {
+            var queryString = $"?PageNumber={request.PageNumber}&PageSize={request.PageSize}";
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+                queryString += $"&SearchTerm={Uri.EscapeDataString(request.SearchTerm)}";
+            if (!string.IsNullOrWhiteSpace(request.SortColumn))
+                queryString += $"&SortColumn={request.SortColumn}&SortDirection={request.SortDirection}";
+
+            var response = await _httpClient.GetFromJsonAsync<PaginatedResponse<UsGroupViewModel>>($"api/Group/paginated{queryString}");
+            return response ?? new PaginatedResponse<UsGroupViewModel>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching paginated groups");
+            return new PaginatedResponse<UsGroupViewModel>();
+        }
+    }
+
+    public async Task<UsGroupViewModel?> CreateGroupAsync(UsGroupCreateModel request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/Group", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<UsGroupViewModel>();
+            }
+            throw new HttpRequestException(await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating group");
+            throw;
+        }
+    }
+
+    public async Task<UsGroupViewModel?> UpdateGroupAsync(UsGroupUpdateModel request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync("api/Group", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<UsGroupViewModel>();
+            }
+            throw new HttpRequestException(await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating group");
+            throw;
+        }
+    }
+
+    public async Task<bool> DeleteGroupAsync(string id)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/Group?id={id}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting group {id}");
+            return false;
+        }
+    }
+
+    public async Task<List<UsUserViewModel>> GetUsersByGroupIdAsync(string groupId)
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<List<UsUserViewModel>>($"api/Group/{groupId}/users");
+            return response ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error fetching users for group {groupId}");
+            return new();
+        }
+    }
+
+    public async Task<List<UsUserPermissionViewModel>> GetPermissionMatrixAsync(string groupId)
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<List<UsUserPermissionViewModel>>($"api/Group/{groupId}/permissions");
+            return response ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error fetching permission matrix for group {groupId}");
+            return new();
+        }
+    }
+
+    public async Task<bool> UpdatePermissionsAsync(List<UsUserPermissionViewModel> models)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/Group/permissions", models);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating permissions");
+            return false;
         }
     }
 

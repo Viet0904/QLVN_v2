@@ -8,6 +8,7 @@ using Microsoft.Extensions.Http;
 using WebBlazor.Handlers;
 using Common.Database;
 using WebBlazor.Services;
+using DataTables.Blazor.Extensions;
 using System;
 
 namespace WebBlazor
@@ -47,9 +48,10 @@ namespace WebBlazor
         builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
                     builder.Services.AddScoped<ThemeService>();
                     builder.Services.AddScoped<AuthService>();
-                    builder.Services.AddScoped<MenuService>();
+        builder.Services.AddScoped<MenuService>();
+        builder.Services.AddDataTables();
 
-                    await builder.Build().RunAsync();
+        await builder.Build().RunAsync();
                 }
             }
 }

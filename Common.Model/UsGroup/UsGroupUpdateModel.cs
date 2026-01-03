@@ -1,9 +1,9 @@
-﻿using Common.Model.Common;
+using Common.Model.Common;
 
 
 namespace Common.Model.UsGroup
 {
-    public class UsGroupCreateModel : BaseViewModel
+    public class UsGroupUpdateModel : BaseViewModel
     {
         public string Id { get; set; } = null!;
         public string Name { get; set; } = null!;

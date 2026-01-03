@@ -1,5 +1,7 @@
 ﻿@using System.Net.Http
 @using System.Net.Http.Json
+@using System.Linq
+@using System.Collections.Generic
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
@@ -9,8 +11,11 @@
 @using WebBlazor
 @using WebBlazor.Layout
 @using WebBlazor.Services
-@using 
 @using Common.Model.Auth
 @using Common.Model.SysTheme
+@using Common.Model.UsUserPermission
 @using Microsoft.AspNetCore.Authorization
+@using DataTables.Blazor
+@using DataTables.Blazor.Extensions
+@using DataTables.Blazor.Options
 @attribute [Authorize]

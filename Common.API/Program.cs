@@ -114,7 +114,6 @@ builder.Services.AddAuthentication(options =>
 
 
 // 1. Đăng ký Services (không dùng Interfaces, gọi trực tiếp Service)
-builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<SysThemeService>();
 builder.Services.AddScoped<UsGroupService>();
 builder.Services.AddScoped<DvsdService>();

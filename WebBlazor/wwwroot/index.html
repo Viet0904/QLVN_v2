@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
@@ -27,18 +28,19 @@
     <link rel="stylesheet" href="/css/select.dataTables.min.css" />
 
     <!-- Custom DataTables CSS  -->
-    <link rel="stylesheet" href="css/datatables-custom.css" /> 
+    <link rel="stylesheet" href="css/datatables-custom.css" />
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <link rel="stylesheet" type="text/css" href="css/jquery.mCustomScrollbar.css">
-    
-   
+
+
 
     <!-- Blazor CSS -->
     <link href="css/app.css" rel="stylesheet" />
     <!-- Scoped CSS will be generated here if needed -->
     <link href="WebBlazor.styles.css" rel="stylesheet" onerror="this.remove()" />
 </head>
+
 <body>
 
     <!-- Pre-loader start -->
@@ -127,10 +129,10 @@
 
     <!-- CRITICAL: Load themeInterop.js BEFORE other custom scripts -->
     <script src="js/themeInterop.js"></script>
-    
+
     <!-- Verify themeInterop is loaded -->
     <script>
-        (function() {
+        (function () {
             // Wait for DOM and scripts to be ready
             if (typeof window.themeInterop === 'undefined') {
                 console.error('CRITICAL: themeInterop.js failed to load!');
@@ -154,7 +156,10 @@
         gtag('config', 'UA-23581568-13');
     </script>
 
+    <script src="js/datatables.functions.js"></script>
+    <script src="_content/DataTables.Blazor/datatables.blazor.js"></script>
     <!-- Blazor Script (LAST) -->
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
+
 </html>

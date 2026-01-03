@@ -39,9 +39,9 @@ namespace Common.Service.Common
             
             cfg.CreateMap<UsUser, UsUserViewModel>()
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.CreatedAt)))
-                .ForMember(dest => dest.CreatedName, opt => opt.MapFrom(src => FormatUser(src.CreatedBy, context)))
+                .ForMember(dest => dest.CreatedName, opt => opt.MapFrom(src => FormatUser(src.CreatedBy ?? string.Empty, context)))
                 .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.UpdatedAt)))
-                .ForMember(dest => dest.UpdatedName, opt => opt.MapFrom(src => FormatUser(src.UpdatedBy, context)));
+                .ForMember(dest => dest.UpdatedName, opt => opt.MapFrom(src => FormatUser(src.UpdatedBy ?? string.Empty, context)));
 
             cfg.CreateMap<UsUserCreateModel, UsUser>()
                 .IgnoreAllNonExisting();
@@ -67,9 +67,9 @@ namespace Common.Service.Common
             
             cfg.CreateMap<UsGroup, UsGroupViewModel>()
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.CreatedAt)))
-                .ForMember(dest => dest.CreatedName, opt => opt.MapFrom(src => FormatUser(src.CreatedBy, context)))
+                .ForMember(dest => dest.CreatedName, opt => opt.MapFrom(src => FormatUser(src.CreatedBy ?? string.Empty, context)))
                 .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.UpdatedAt)))
-                .ForMember(dest => dest.UpdatedName, opt => opt.MapFrom(src => FormatUser(src.UpdatedBy, context)));
+                .ForMember(dest => dest.UpdatedName, opt => opt.MapFrom(src => FormatUser(src.UpdatedBy ?? string.Empty, context)));
 
             //cfg.CreateMap<UsGroupCreateModel, UsGroup>()
             //    .IgnoreAllNonExisting();

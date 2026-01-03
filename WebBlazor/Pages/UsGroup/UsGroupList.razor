@@ -1,0 +1,348 @@
+@page "/system_group"
+@using WebBlazor.Services
+@using WebBlazor.Models
+@using Common.Model.UsGroup
+@using Common.Model.UsUser
+@using Common.Model.UsUserPermission
+@using Common.Model.Common
+@using DataTables.Blazor
+@using DataTables.Blazor.Options
+@inject UserApiClient GroupApi
+@inject IJSRuntime JS
+@inject NotificationService Notification
+
+<div class="pcoded-content">
+    <div class="pcoded-inner-content">
+        <div class="main-body">
+            <div class="page-wrapper">
+                <!-- Page-header start -->
+                <div class="page-header">
+                    <div class="row align-items-end">
+                        <div class="col-lg-8">
+                            <div class="page-header-title">
+                                <div class="d-inline">
+                                    <h4>Danh sách Nhóm người dùng</h4>
+                                    <span>Quản lý nhóm và phân quyền người dùng</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="page-header-breadcrumb">
+                                <button class="btn btn-primary" @onclick="ShowAddModal">
+                                    <i class="feather icon-plus"></i> Thêm mới
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Page-header end -->
+
+                <div class="page-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card">
+                                <div class="card-block">
+                                    <div class="dt-responsive table-responsive">
+                                        <DataTable Options="@_options" class="table table-striped table-bordered nowrap w-100">
+                                            <thead>
+                                                <tr>
+                                                    <th>Mã Nhóm</th>
+                                                    <th>Tên Nhóm</th>
+                                                    <th>Ghi chú</th>
+                                                    <th>Trạng thái</th>
+                                                    <th style="width: 100px;">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <DataTableColumn Data="id" />
+                                            <DataTableColumn Data="name" />
+                                            <DataTableColumn Data="note" />
+                                            <DataTableColumn Data="rowStatus" Render="@("DataTableFunctions.renderStatus")" />
+                                            <DataTableColumn Data="id" Orderable="false" Render="@("DataTableFunctions.renderActions")" />
+                                        </DataTable>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(SelectedGroupId))
+                    {
+                        <div class="row mt-4" id="permission-matrix-section">
+                            <div class="col-sm-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Ma trận quyền hạn - Nhóm @SelectedGroupName</h5>
+                                        <div class="card-header-right">
+                                            <button class="btn btn-success btn-sm" @onclick="SavePermissions" disabled="@IsSavingPermissions">
+                                                @if (IsSavingPermissions)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm"></span>
+                                                }
+                                                else
+                                                {
+                                                    <i class="feather icon-save"></i> <span>Lưu quyền</span>
+                                                }
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-block">
+                                        <div class="table-responsive" style="max-height: 500px; overflow: auto;">
+                                            <table class="table table-bordered table-hover">
+                                                <thead class="bg-light sticky-top">
+                                                    <tr>
+                                                        <th rowspan="2" class="align-middle">Chức năng (Menu)</th>
+                                                        @foreach (var user in GroupUsers)
+                                                        {
+                                                            <th colspan="7" class="text-center">@user.Name</th>
+                                                        }
+                                                    </tr>
+                                                    <tr>
+                                                        @foreach (var user in GroupUsers)
+                                                        {
+                                                            <th class="text-center" title="Xem">X</th>
+                                                            <th class="text-center" title="Thêm">T</th>
+                                                            <th class="text-center" title="Sửa">S</th>
+                                                            <th class="text-center" title="Xóa">X</th>
+                                                            <th class="text-center" title="Sửa HL">SH</th>
+                                                            <th class="text-center" title="Xóa HL">XH</th>
+                                                            <th class="text-center" title="Xuất DL">E</th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @if (PermissionMatrix != null)
+                                                    {
+                                                        @foreach (var menuId in PermissionMatrix.Select(p => p.MenuId).Distinct())
+                                                        {
+                                                            var menuName = PermissionMatrix.First(p => p.MenuId == menuId).MenuName;
+                                                            <tr>
+                                                                <td>@menuName</td>
+                                                                @foreach (var user in GroupUsers)
+                                                                {
+                                                                    var perm = PermissionMatrix.FirstOrDefault(p => p.UserId == user.Id && p.MenuId == menuId);
+                                                                    if (perm != null)
+                                                                    {
+                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Xem" /></td>
+                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Them" /></td>
+                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Sua" /></td>
+                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Xoa" /></td>
+                                                                        <td class="text-center"><input type="checkbox" @bind="perm.SuaHangLoat" /></td>
+                                                                        <td class="text-center"><input type="checkbox" @bind="perm.XoaHangLoat" /></td>
+                                                                        <td class="text-center"><input type="checkbox" @bind="perm.XuatDuLieu" /></td>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <td colspan="7" class="text-center text-muted">-</td>
+                                                                    }
+                                                                }
+                                                            </tr>
+                                                        }
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<UsGroupModal 
+    GroupModel="CurrentGroup" 
+    IsEditMode="IsEditMode" 
+    IsProcessing="IsProcessing" 
+    DeleteGroupName="@DeleteGroupName"
+    OnSubmit="HandleSubmit"
+    OnDelete="OnConfirmDelete"
+    OnClose="CloseModal" />
+
+@code {
+    private DataTableOptions _options = new();
+    private UsGroupFormModel CurrentGroup = new();
+    private List<UsUserViewModel> GroupUsers = new();
+    private List<UsUserPermissionViewModel> PermissionMatrix = new();
+    
+    private string SelectedGroupId = "";
+    private string SelectedGroupName = "";
+    private string DeleteGroupId = "";
+    private string DeleteGroupName = "";
+    
+    private bool IsEditMode = false;
+    private bool IsProcessing = false;
+    private bool IsSavingPermissions = false;
+    private bool isLoading = true;
+    private bool layoutInitialized = false;
+    protected override void OnInitialized()
+    {
+        _options = new DataTableOptions
+        {
+            ServerSide = true,
+            Processing = true,
+            Ajax = new AjaxOptions("http://localhost:5084/api/Group/paginated")
+        };
+        isLoading = false;
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!isLoading && !layoutInitialized)
+        {
+            layoutInitialized = true;
+            try
+            {
+                // Reload layout scripts if needed
+                await JS.InvokeVoidAsync("eval", "if(typeof $.getScript === 'function') { $.getScript('js/pcoded.min.js'); $.getScript('js/vartical-layout.min.js'); $.getScript('js/script.js'); }");
+            }
+            catch { }
+            finally
+            {
+                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+            }
+        }
+    }
+
+
+    [JSInvokable]
+    public async Task SelectGroup(string id, string name)
+    {
+        SelectedGroupId = id;
+        SelectedGroupName = name;
+        GroupUsers = await GroupApi.GetUsersByGroupIdAsync(id);
+        PermissionMatrix = await GroupApi.GetPermissionMatrixAsync(id);
+        StateHasChanged();
+        
+        // Scroll to matrix
+        await JS.InvokeVoidAsync("eval", "$('html, body').animate({ scrollTop: $('#permission-matrix-section').offset().top - 100 }, 500);");
+    }
+
+    [JSInvokable]
+    public async Task EditGroup(string id)
+    {
+        var group = await GroupApi.GetByIdAsync(id); // I need to make sure this exists in Client
+        if (group != null)
+        {
+            CurrentGroup = new UsGroupFormModel {
+                Id = group.Id,
+                Name = group.Name,
+                Note = group.Note,
+                RowStatus = group.RowStatus
+            };
+            IsEditMode = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("eval", "$('#groupModal').modal('show')");
+        }
+    }
+
+    [JSInvokable]
+    public async Task DeleteGroup(string id, string name)
+    {
+        DeleteGroupId = id;
+        DeleteGroupName = name;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("eval", "$('#deleteGroupModal').modal('show')");
+    }
+
+    private void ShowAddModal()
+    {
+        CurrentGroup = new UsGroupFormModel();
+        IsEditMode = false;
+        StateHasChanged();
+        JS.InvokeVoidAsync("eval", "$('#groupModal').modal('show')");
+    }
+
+    private async Task HandleSubmit()
+    {
+        IsProcessing = true;
+        try
+        {
+            if (IsEditMode)
+            {
+                var model = new UsGroupUpdateModel { Id = CurrentGroup.Id, Name = CurrentGroup.Name, Note = CurrentGroup.Note, RowStatus = CurrentGroup.RowStatus };
+                await GroupApi.UpdateGroupAsync(model);
+                await Notification.ShowSuccessAsync("Cập nhật nhóm thành công");
+            }
+            else
+            {
+                var model = new UsGroupCreateModel { Id = CurrentGroup.Id, Name = CurrentGroup.Name, Note = CurrentGroup.Note };
+                await GroupApi.CreateGroupAsync(model);
+                await Notification.ShowSuccessAsync("Thêm nhóm mới thành công");
+            }
+            
+            await CloseModal();
+            await JS.InvokeVoidAsync("eval", "$('.table').DataTable().ajax.reload(null, false);");
+        }
+        catch (Exception ex)
+        {
+            await Notification.ShowErrorAsync(ex.Message);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task OnConfirmDelete()
+    {
+        IsProcessing = true;
+        try
+        {
+            await GroupApi.DeleteGroupAsync(DeleteGroupId);
+            await Notification.ShowSuccessAsync("Xóa nhóm thành công");
+            await JS.InvokeVoidAsync("eval", "$('#deleteGroupModal').modal('hide')");
+            await JS.InvokeVoidAsync("eval", "$('.table').DataTable().ajax.reload(null, false);");
+        }
+        catch (Exception ex)
+        {
+            await Notification.ShowErrorAsync(ex.Message);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task SavePermissions()
+    {
+        IsSavingPermissions = true;
+        try
+        {
+            var result = await GroupApi.UpdatePermissionsAsync(PermissionMatrix);
+            if (result)
+                await Notification.ShowSuccessAsync("Lưu quyền hạn thành công");
+            else
+                await Notification.ShowErrorAsync("Lưu quyền hạn thất bại");
+        }
+        catch (Exception ex)
+        {
+            await Notification.ShowErrorAsync(ex.Message);
+        }
+        finally
+        {
+            IsSavingPermissions = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        await JS.InvokeVoidAsync("eval", "$('#groupModal').modal('hide')");
+    }
+}
+
+<style>
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: white;
+    }
+    .badge {
+        padding: 5px 10px;
+        border-radius: 4px;
+    }
+    .badge-success { background-color: #28a745; color: white; }
+    .badge-danger { background-color: #dc3545; color: white; }
+</style>

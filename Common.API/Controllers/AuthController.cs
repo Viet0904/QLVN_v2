@@ -8,9 +8,9 @@ namespace Common.API.Controllers
     [ApiController]
     public class AuthController : Controller
     {
-        private readonly UserService _userService;
+        private readonly UsUserService _userService;
 
-        public AuthController(UserService userService)
+        public AuthController(UsUserService userService)
         {
             _userService = userService;
         }
@@ -20,7 +20,7 @@ namespace Common.API.Controllers
         {
             try
             {
-                var result = await _userService.LoginAsync(request);
+                var result = await _userService.LoginWithToken(request);
                 return Ok(result);
             }
             catch (Exception ex)

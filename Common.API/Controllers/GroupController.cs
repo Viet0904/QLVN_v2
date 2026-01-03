@@ -2,6 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Common.Service;
 using Common.Library.Constant;
+using Common.Model.UsGroup;
+using Common.Model.UsUser;
+using Common.Model.UsUserPermission;
+using Common.Model.Common;
+using Common.Library.Helper;
 namespace Common.API.Controllers;
 
 [Route("api/[controller]")]
@@ -17,56 +22,161 @@ public class GroupController : ControllerBase
         _groupService = groupService;
         _logger = logger;
     }
-
+    // Lấy tất cả Group đang Active 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
         try
         {
            
-            var result = await _groupService.GetAllAsync();
+            var result = await _groupService.GetAll();
             return Ok(result);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { MessageConstant.NOT_EXIST, error = ex.Message });
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
 
         }
     }
-    [HttpGet]
+    // Lấy tất cả Group cả Active và không Active
+    [HttpGet("full")]
+    public async Task<IActionResult> GetFull()
+    {
+        try
+        {
+            var result = await _groupService.GetFull();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
+
+        }
+    }
+    // Lấy Group theo ID
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
         try
         {
-            var result = _groupService.GetById(id);
-            if (!result.IsSuccess)
+            var result = await _groupService.GetById(id);
+            if (result == null)
             {
-                return NotFound(result);
+                return NotFound(new { Message = MessageConstant.NOT_EXIST });
             }
             return Ok(result);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { MessageConstant.NOT_EXIST, error = ex.Message });
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
         }
     }
-
+    // Tạo Group
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Common.Model.UsGroup.UsGroupViewModel model)
+    public async Task<IActionResult> Create([FromBody] UsGroupCreateModel model)
     {
         try
         {
-            var result = _groupService.Create(model);
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result);
-            }
+            var result = await _groupService.Create(model);
             return Ok(result);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { MessageConstant.NOT_EXIST, error = ex.Message });
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
         }
     }
 
+    // Update Group
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] UsGroupUpdateModel model)
+    {
+        try
+        {
+            var result = await _groupService.Update(model);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
+
+    // Delete Group
+    [HttpDelete]
+    public async Task<IActionResult> Delete(string id)
+    {
+        try
+        {
+            var result = await _groupService.Delete(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
+
+    [HttpGet("paginated")]
+    public async Task<IActionResult> GetPaginated([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null, [FromQuery] string? sortColumn = null, [FromQuery] string? sortDirection = "asc")
+    {
+        try
+        {
+            var request = new PaginatedRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                SearchTerm = searchTerm,
+                SortColumn = sortColumn,
+                SortDirection = sortDirection
+            };
+            var result = await _groupService.GetPaginated(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}/users")]
+    public async Task<IActionResult> GetUsers(string id)
+    {
+        try
+        {
+            var result = await _groupService.GetUsersByGroupId(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}/permissions")]
+    public async Task<IActionResult> GetPermissions(string id)
+    {
+        try
+        {
+            var result = await _groupService.GetPermissionMatrix(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
+
+    [HttpPost("permissions")]
+    public async Task<IActionResult> UpdatePermissions([FromBody] IEnumerable<UsUserPermissionViewModel> models)
+    {
+        try
+        {
+            var result = await _groupService.UpdatePermissions(models);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
+        }
+    }
 }
