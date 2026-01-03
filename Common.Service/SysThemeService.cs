@@ -10,14 +10,15 @@ using System;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace Common.Service
 {
     public class SysThemeService : BaseService
     {
         // ✅ Constructor nhận DbContext và IMapper
-        public SysThemeService(QLVN_DbContext dbContext, IMapper mapper)
-            : base(dbContext, mapper)
+        public SysThemeService(QLVN_DbContext dbContext, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+            : base(dbContext, mapper, httpContextAccessor)
         {
         }
 
@@ -62,6 +63,7 @@ namespace Common.Service
                     var jsonString = JsonSerializer.Serialize(settings);
                     user.Theme = jsonString;
                     user.UpdatedAt = DateTime.Now;
+                    user.UpdatedBy = GetCurrentUserId();
                     DbContext.SaveChanges();
                 }
             });
@@ -111,6 +113,7 @@ namespace Common.Service
                     var jsonString = JsonSerializer.Serialize(model);
                     result.Theme = jsonString;
                     result.UpdatedAt = DateTime.Now;
+                    result.UpdatedBy = GetCurrentUserId();
                     DbContext.SaveChanges();
                     res.Data = true;
                 }

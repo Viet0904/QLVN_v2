@@ -4,10 +4,10 @@ using Common.Database.Entities;
 using Common.Model.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.AspNetCore.Http;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace Common.Service.Common
 {
@@ -18,16 +18,24 @@ namespace Common.Service.Common
         // Nhận từ constructor thay vì từ UnitOfWork
         protected readonly QLVN_DbContext DbContext;
         protected readonly IMapper Mapper;
+        protected readonly IHttpContextAccessor? HttpContextAccessor;
 
         #endregion Properties
 
         #region ConstructorMapperProfile
 
         //  Inject DbContext và IMapper qua constructor
-        public BaseService(QLVN_DbContext dbContext, IMapper mapper)
+        public BaseService(QLVN_DbContext dbContext, IMapper mapper, IHttpContextAccessor? httpContextAccessor = null)
         {
             DbContext = dbContext;
             Mapper = mapper;
+            HttpContextAccessor = httpContextAccessor;
+        }
+
+        protected string GetCurrentUserId()
+        {
+            var userId = HttpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return userId ?? "System";
         }
 
         #endregion Constructor
@@ -179,9 +187,13 @@ namespace Common.Service.Common
         public string GenerateId(string tableName, int length)
         {
             var table = DbContext.SysIdGenerateds.Where(x => x.Table.Equals(tableName)).FirstOrDefault();
+            string currentUserId = GetCurrentUserId();
+
             if (table != null)
             {
                 table.TotalRows += 1;
+                table.UpdatedAt = DateTime.Now;
+                table.UpdatedBy = currentUserId;
                 DbContext.SaveChanges();
             }
             else
@@ -189,7 +201,9 @@ namespace Common.Service.Common
                 table = new SysIdGenerated
                 {
                     Table = tableName,
-                    TotalRows = 1
+                    TotalRows = 1,
+                    UpdatedAt = DateTime.Now,
+                    UpdatedBy = currentUserId
                 };
                 DbContext.SysIdGenerateds.Add(table);
                 DbContext.SaveChanges();

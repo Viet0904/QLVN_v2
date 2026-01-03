@@ -3,10 +3,8 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http;
 using WebBlazor.Handlers;
-using Common.Database;
 using WebBlazor.Services;
 using DataTables.Blazor.Extensions;
 using System;
@@ -46,9 +44,11 @@ namespace WebBlazor
         builder.Services.AddBlazoredLocalStorage();
         builder.Services.AddAuthorizationCore();
         builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
-                    builder.Services.AddScoped<ThemeService>();
-                    builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<ThemeService>();
+        builder.Services.AddScoped<AuthService>();
         builder.Services.AddScoped<MenuService>();
+
+        // Thêm Service 
         builder.Services.AddDataTables();
 
         await builder.Build().RunAsync();

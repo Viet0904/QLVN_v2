@@ -17,6 +17,14 @@ namespace Common.Library.Constant
 
         public static string CONTROL_REQUIRE = "Không được bỏ trống.";
 
+        public static string NOT_CORRECT = "Thông tin không chính xác!";
+
+        public static string CREATED_SUCCESS = "Tạo mới thành công.";
+        public static string UPDATED_SUCCESS = "Cập nhật thành công.";
+        public static string DELETED_SUCCESS = "Xóa thành công.";
+
+        public static string DATA_NOT_FOUND = "Không tìm thấy dữ liệu!";
+
         public static string USERNAME_NOT_NULL = "Tên đăng nhập không được bỏ trống!";
 
         public static string PASSWORD_NOT_NULL = "Mật khẩu không được bỏ trống!";
@@ -24,16 +32,6 @@ namespace Common.Library.Constant
         public static string SYSTEM_NOT_NULL = "Đơn vị không được bỏ trống!";
 
         public static string USERNAME_PASSWORD_NOT_CORRECT = "Tên đăng nhập hoặc mật khẩu không đúng!";
-
-
-        public static string CREATED_SUCCESS = "Tạo mới thành công.";
-        public static string UPDATED_SUCCESS = "Cập nhật thành công.";
-        public static string DELETED_SUCCESS = "Xóa thành công.";
-
-        public static string USERNAME_EXIST = "Tên đăng nhập đã tồn tại!";
-        public static string GROUP_NAME_EXIST = "Tên nhóm đã tồn tại!";
-        public static string DATA_NOT_FOUND = "Không tìm thấy dữ liệu!";
-
 
        
 

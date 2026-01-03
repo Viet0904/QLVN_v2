@@ -3,9 +3,8 @@
 
 namespace Common.Model.UsGroup
 {
-    public class UsGroupCreateModel : BaseViewModel
+    public class UsGroupCreateModel
     {
-        public string Id { get; set; } = null!;
         public string Name { get; set; } = null!;
         public string? Note { get; set; }
     }

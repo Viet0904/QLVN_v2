@@ -5,7 +5,7 @@ using Common.Library.Constant;
 using Common.Library.Helper;
 using Common.Model.Common;
 using Common.Service.Common;
-using Common.Service.Interfaces;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +16,8 @@ namespace Common.Service
     public class DvsdService : BaseService
     {
         // ✅ Constructor nhận DbContext và IMapper
-        public DvsdService(QLVN_DbContext dbContext, IMapper mapper)
-            : base(dbContext, mapper)
+        public DvsdService(QLVN_DbContext dbContext, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+            : base(dbContext, mapper, httpContextAccessor)
         {
         }
 

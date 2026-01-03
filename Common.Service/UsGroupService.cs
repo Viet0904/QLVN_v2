@@ -9,13 +9,14 @@ using Common.Model.UsUser;
 using Common.Model.UsUserPermission;
 using Common.Service.Common;
 using Common.Library.Helper;
+using Microsoft.AspNetCore.Http;
 namespace Common.Service
 {
     public class UsGroupService : BaseService
     {
         //  Constructor nhận DbContext và IMapper
-        public UsGroupService(QLVN_DbContext dbContext, IMapper mapper)
-            : base(dbContext, mapper)
+        public UsGroupService(QLVN_DbContext dbContext, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+            : base(dbContext, mapper, httpContextAccessor)
         {
         }
 
@@ -46,48 +47,61 @@ namespace Common.Service
             });
         }
         // Tạo nhóm người dùng
-       public async Task<UsGroupViewModel> Create(UsGroupCreateModel model){
-         var result = await DbContext.UsGroups.Where(x => x.Name == model.Name && x.RowStatus == RowStatusConstant.Active).FirstOrDefaultAsync();
+        public async Task<UsGroupViewModel> Create(UsGroupCreateModel model)
+        {
+            var result = await DbContext.UsGroups.Where(x => x.Name == model.Name && x.RowStatus == RowStatusConstant.Active).FirstOrDefaultAsync();
             if (result != null)
             {
-                throw new Exception(MessageConstant.GROUP_NAME_EXIST);
+                throw new Exception(MessageConstant.EXIST);
             }
-            using (var transaction = await DbContext.Database.BeginTransactionAsync())
+            var strategy = DbContext.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                try
+                using (var transaction = await DbContext.Database.BeginTransactionAsync())
                 {
-                    var item = Mapper.Map<UsGroup>(model);
+                    try
+                    {
+                        var item = Mapper.Map<UsGroup>(model);
+                        item.CreatedAt = DateTime.Now;
+                        item.UpdatedAt = DateTime.Now;
+                        string currentUserId = GetCurrentUserId();
+                        item.CreatedBy = currentUserId;
+                        item.UpdatedBy = currentUserId;
+                        item.RowStatus = RowStatusConstant.Active;
+                        int lengthGroup = 3;
+                    generateId:
+                        item.Id = GenerateId(DefaultCodeConstant.UsGroup.Name, lengthGroup);
 
-                generateId:
-                    item.Id = item.Id + GenerateId(DefaultCodeConstant.UsGroup.Name, DefaultCodeConstant.UsGroup.Length);
+                        var resultIdExist = await DbContext.UsGroups.Where(x => x.Id == item.Id).FirstOrDefaultAsync();
+                        if (resultIdExist != null)
+                            goto generateId;
 
-                    var resultIdExist = await DbContext.UsGroups.Where(x => x.Id == item.Id).FirstOrDefaultAsync();
-                    if (resultIdExist != null)
-                        goto generateId;
+                        await DbContext.UsGroups.AddAsync(item);
+                        await DbContext.SaveChangesAsync();
 
-                
-                    await DbContext.UsGroups.AddAsync(item);
-                    await DbContext.SaveChangesAsync();
+                        await transaction.CommitAsync();
 
-                    await transaction.CommitAsync();
-
-                    return await GetById(item.Id);
+                        return await GetById(item.Id);
+                    }
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
                 }
-                catch (Exception)
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
-            }
-       }
+            });
+        }
         // Update nhóm người dùng, trả về lại thông tin người dùng để Blazor cập nhật lại UI, mà không cần refresh lại trang và chỉ reload lại 1 dòng 
-        public async Task<UsGroupViewModel> Update(UsGroupUpdateModel model){
+        public async Task<UsGroupViewModel> Update(UsGroupUpdateModel model)
+        {
             try
             {
                 var result = await DbContext.UsGroups.Where(x => x.Id == model.Id).FirstOrDefaultAsync();
                 if (result != null)
                 {
                     Mapper.Map(model, result);
+                    result.UpdatedAt = DateTime.Now;
+                    result.UpdatedBy = GetCurrentUserId();
                     await DbContext.SaveChangesAsync();
                     return await GetById(model.Id);
                 }
@@ -179,69 +193,87 @@ namespace Common.Service
 
         public async Task<IEnumerable<UsUserPermissionViewModel>> GetPermissionMatrix(string groupId)
         {
-            var userIds = await DbContext.UsUsers
+            var users = await DbContext.UsUsers
                 .Where(u => u.GroupId == groupId && u.RowStatus == RowStatusConstant.Active)
-                .Select(u => u.Id)
                 .ToListAsync();
 
-            var permissions = await DbContext.UsUserPermissions
-                .Include(p => p.Menu)
+            if (!users.Any()) return new List<UsUserPermissionViewModel>();
+
+            var menus = await DbContext.SysMenus
+                .Where(m => m.IsActive == 1)
+                .ToListAsync();
+
+            var userIds = users.Select(u => u.Id).ToList();
+            var existingPermissions = await DbContext.UsUserPermissions
                 .Where(p => userIds.Contains(p.UserId))
                 .ToListAsync();
 
-            var result = permissions.Select(p => new UsUserPermissionViewModel
+            var result = new List<UsUserPermissionViewModel>();
+
+            foreach (var menu in menus)
             {
-                UserId = p.UserId,
-                MenuId = p.MenuId,
-                MenuName = p.Menu.Name,
-                Xem = p.Xem ?? false,
-                Them = p.Them ?? false,
-                Sua = p.Sua ?? false,
-                SuaHangLoat = p.SuaHangLoat ?? false,
-                Xoa = p.Xoa ?? false,
-                XoaHangLoat = p.XoaHangLoat ?? false,
-                XuatDuLieu = p.XuatDuLieu ?? false,
-                Khac = p.Khac ?? false
-            }).ToList();
+                foreach (var user in users)
+                {
+                    var p = existingPermissions.FirstOrDefault(x => x.UserId == user.Id && x.MenuId == menu.Name);
+                    result.Add(new UsUserPermissionViewModel
+                    {
+                        UserId = user.Id,
+                        MenuId = menu.Name,
+                        MenuName = !string.IsNullOrEmpty(menu.Note) ? menu.Note : menu.Name,
+                        Xem = p?.Xem ?? false,
+                        Them = p?.Them ?? false,
+                        Sua = p?.Sua ?? false,
+                        SuaHangLoat = p?.SuaHangLoat ?? false,
+                        Xoa = p?.Xoa ?? false,
+                        XoaHangLoat = p?.XoaHangLoat ?? false,
+                        XuatDuLieu = p?.XuatDuLieu ?? false,
+                        Khac = p?.Khac ?? false
+                    });
+                }
+            }
 
             return result;
         }
 
         public async Task<bool> UpdatePermissions(IEnumerable<UsUserPermissionViewModel> models)
         {
-            using (var transaction = await DbContext.Database.BeginTransactionAsync())
+            var strategy = DbContext.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                try
+                using (var transaction = await DbContext.Database.BeginTransactionAsync())
                 {
-                    foreach (var model in models)
+                    try
                     {
-                        var permission = await DbContext.UsUserPermissions
-                            .FirstOrDefaultAsync(p => p.UserId == model.UserId && p.MenuId == model.MenuId);
-
-                        if (permission != null)
+                        foreach (var model in models)
                         {
-                            permission.Xem = model.Xem;
-                            permission.Them = model.Them;
-                            permission.Sua = model.Sua;
-                            permission.SuaHangLoat = model.SuaHangLoat;
-                            permission.Xoa = model.Xoa;
-                            permission.XoaHangLoat = model.XoaHangLoat;
-                            permission.XuatDuLieu = model.XuatDuLieu;
-                            permission.Khac = model.Khac;
-                            permission.UpdatedAt = DateTime.Now;
-                        }
-                    }
+                            var permission = await DbContext.UsUserPermissions
+                                .FirstOrDefaultAsync(p => p.UserId == model.UserId && p.MenuId == model.MenuId);
 
-                    await DbContext.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                    return true;
+                            if (permission != null)
+                            {
+                                permission.Xem = model.Xem;
+                                permission.Them = model.Them;
+                                permission.Sua = model.Sua;
+                                permission.SuaHangLoat = model.SuaHangLoat;
+                                permission.Xoa = model.Xoa;
+                                permission.XoaHangLoat = model.XoaHangLoat;
+                                permission.XuatDuLieu = model.XuatDuLieu;
+                                permission.Khac = model.Khac;
+                                permission.UpdatedAt = DateTime.Now;
+                            }
+                        }
+
+                        await DbContext.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        return true;
+                    }
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
                 }
-                catch (Exception)
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
-            }
+            });
         }
     }
 }

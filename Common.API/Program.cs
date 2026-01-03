@@ -26,13 +26,13 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()); // Cho phép gửi Token header
 });
 
-// ✅ 1. LẤY ENCRYPTED CONNECTION STRING
+//  1. LẤY ENCRYPTED CONNECTION STRING
 string encryptedServer = builder.Configuration.GetConnectionString("DatabaseIP") ?? "";
 string encryptedDatabase = builder.Configuration.GetConnectionString("DatabaseName") ?? "";
 string encryptedUserName = builder.Configuration.GetConnectionString("DatabaseUser") ?? "";
 string encryptedPassword = builder.Configuration.GetConnectionString("DatabasePassword") ?? "";
 
-// ✅ 2. TẠO MODEL VÀ SET CHO UnitOfWork
+//  2. TẠO MODEL VÀ SET CHO UnitOfWork
 var clientSql = new SQLConnectionStringModel
 {
     Ip = encryptedServer,
@@ -42,19 +42,19 @@ var clientSql = new SQLConnectionStringModel
 };
 UnitOfWork.SetClientConnectionString = clientSql;
 
-// ✅ 3. TẠO DataProvider VÀ LẤY CONNECTION STRING
+//  3. TẠO DataProvider VÀ LẤY CONNECTION STRING
 var tempProvider = new DataProvider(clientSql);
 string efConn = tempProvider.GetConnectionString();
 
-Console.WriteLine("========== DECRYPTED VALUES ==========");
-Console.WriteLine($"Server: {CryptorEngineHelper.Decrypt(encryptedServer)}");
-Console.WriteLine($"Database: {CryptorEngineHelper.Decrypt(encryptedDatabase)}");
-Console.WriteLine($"Username: {CryptorEngineHelper.Decrypt(encryptedUserName)}");
-Console.WriteLine($"Password: [{CryptorEngineHelper.Decrypt(encryptedPassword)}]");
-Console.WriteLine($"Password Length: {CryptorEngineHelper.Decrypt(encryptedPassword).Length}");
-Console.WriteLine("======================================");
-Console.WriteLine($"EF Connection String: {efConn}");
-Console.WriteLine("======================================");
+//Console.WriteLine("========== DECRYPTED VALUES ==========");
+//Console.WriteLine($"Server: {CryptorEngineHelper.Decrypt(encryptedServer)}");
+//Console.WriteLine($"Database: {CryptorEngineHelper.Decrypt(encryptedDatabase)}");
+//Console.WriteLine($"Username: {CryptorEngineHelper.Decrypt(encryptedUserName)}");
+//Console.WriteLine($"Password: [{CryptorEngineHelper.Decrypt(encryptedPassword)}]");
+//Console.WriteLine($"Password Length: {CryptorEngineHelper.Decrypt(encryptedPassword).Length}");
+//Console.WriteLine("======================================");
+//Console.WriteLine($"EF Connection String: {efConn}");
+//Console.WriteLine("======================================");
 
 // ✅ 4. ĐĂNG KÝ DbContext - QUAN TRỌNG!
 builder.Services.AddDbContext<QLVN_DbContext>(options =>
@@ -70,10 +70,10 @@ builder.Services.AddDbContext<QLVN_DbContext>(options =>
     });
 }, ServiceLifetime.Scoped); // ✅ Đảm bảo Scoped lifetime
 
-// ✅ 5. ĐĂNG KÝ BaseEntity VỚI CÙNG CONNECTION STRING
+//  5. ĐĂNG KÝ BaseEntity VỚI CÙNG CONNECTION STRING
 builder.Services.AddScoped<BaseEntity>(sp => new BaseEntity(efConn));
 
-// ✅ ĐĂNG KÝ AutoMapper - Sử dụng BaseEntity
+//  ĐĂNG KÝ AutoMapper - Sử dụng BaseEntity
 builder.Services.AddScoped<IMapper>(sp =>
 {
     var baseEntity = sp.GetRequiredService<BaseEntity>();
@@ -123,10 +123,11 @@ builder.Services.AddScoped<SysMenuService>();
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
-// --- 5. CẤU HÌNH SWAGGER (ĐỂ TEST TOKEN) ---
+// --- 5. CẤU HÌNH SWAGGER  ---
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Hệ thống Quản lý Vùng nuôi (QLVN) API", Version = "v1" });

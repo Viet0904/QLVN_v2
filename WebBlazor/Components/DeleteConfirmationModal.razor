@@ -1,0 +1,70 @@
+@inject IJSRuntime JS
+
+@if (IsVisible)
+{
+    <div class="modal fade show" id="@ModalId" tabindex="-1" role="dialog" style="display: block; background: rgba(0,0,0,0.5); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 450px;">
+            <div class="modal-content">
+                <div class="modal-header bg-danger" style="padding: 15px 20px;">
+                    <h5 class="modal-title text-white" style="font-size: 18px;">
+                        <i class="feather icon-alert-triangle" style="margin-right: 8px;"></i> @Title
+                    </h5>
+                    <button type="button" class="close text-white" @onclick="CloseModal" style="opacity: 1; border: none; background: transparent;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center" style="padding: 35px 30px;">
+                    <i class="feather icon-trash-2 text-danger" style="font-size: 72px; display: block; margin-bottom: 20px;"></i>
+                    <p style="font-size: 16px; margin-bottom: 8px; color: #555;">@Message</p>
+                    <p style="font-size: 20px; font-weight: 700; color: #333; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        @ItemName
+                    </p>
+                    <p class="text-muted" style="font-size: 13px; margin-bottom: 0;">
+                        <i class="feather icon-info" style="margin-right: 5px;"></i>
+                        @SubMessage
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center" style="padding: 20px 30px 25px; border-top: 1px solid #eee;">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal" style="min-width: 110px; padding: 10px 25px;">
+                        <i class="feather icon-x"></i> Hủy
+                    </button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDelete" disabled="@IsProcessing" style="min-width: 110px; padding: 10px 25px;">
+                        @if (IsProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>Đang xóa...</span>
+                        }
+                        else
+                        {
+                            <i class="feather icon-trash-2"></i>
+                            <span>Xóa</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string ModalId { get; set; } = "deleteConfirmationModal";
+    [Parameter] public string Title { get; set; } = "Xác nhận xóa";
+    [Parameter] public string Message { get; set; } = "Bạn có chắc chắn muốn xóa:";
+    [Parameter] public string SubMessage { get; set; } = "Hành động này không thể hoàn tác!";
+    [Parameter] public string ItemName { get; set; } = string.Empty;
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public bool IsProcessing { get; set; }
+    
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task ConfirmDelete()
+    {
+        await OnConfirm.InvokeAsync();
+    }
+
+    private async Task CloseModal()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}

@@ -5,6 +5,7 @@
 @using Common.Model.Common
 
 @using WebBlazor.Services
+@using WebBlazor.Components
 @using Microsoft.AspNetCore.Components.Forms
 @inject AuthenticationStateProvider AuthStateProvider
 @using Microsoft.AspNetCore.Components.Authorization
@@ -120,16 +121,16 @@
 <UserModal UserModel="UsUserFormModel"
            IsEditMode="isEditMode"
            IsProcessing="isProcessing"
-           DeleteUserId="deleteUserId"
-           DeleteUserName="@deleteUserName"
-           Password="@password"
-           PasswordChanged="@((value) => password = value)"
-           ConfirmPassword="@confirmPassword"
-           ConfirmPasswordChanged="@((value) => confirmPassword = value)"
            Groups="allGroups"
            OnSubmit="HandleSaveUser"
-           OnDelete="HandleDeleteUser"
            OnClose="CloseModals" />
+
+<!-- Generic Delete Confirmation Modal -->
+<DeleteConfirmationModal IsVisible="@isDeleteModalVisible"
+                        IsProcessing="@isProcessing"
+                        ItemName="@deleteUserName"
+                        OnConfirm="HandleDeleteUser"
+                        OnCancel="CloseModals" />
 
 @code {
     // State cho pagination
@@ -159,6 +160,7 @@
     private bool isProcessing = false;
     private string deleteUserId = string.Empty;
     private string deleteUserName = string.Empty;
+    private bool isDeleteModalVisible = false;
     private string password = string.Empty;
     private string confirmPassword = string.Empty;
 
@@ -415,7 +417,7 @@
     [JSInvokable("OpenEditModalById")]
     public async Task OpenEditModalById(string userId)
     {
-        var user = paginatedUsers.Items.FirstOrDefault(u => u.Id == userId);
+        var user = await UserService.GetUserByIdAsync(userId);
         if (user != null)
         {
             await OpenEditModal(user);
@@ -436,21 +438,20 @@
     {
         deleteUserId = user.Id;
         deleteUserName = user.Name;
+        isDeleteModalVisible = true;
         StateHasChanged();
-        await Task.Delay(50);
-        await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('show')");
     }
 
     private async Task CloseModals()
     {
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
-        await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
-
+        
         UsUserFormModel = new UsUserFormModel();
         password = string.Empty;
         confirmPassword = string.Empty;
         deleteUserId = string.Empty;
         deleteUserName = string.Empty;
+        isDeleteModalVisible = false;
         isProcessing = false;
 
         StateHasChanged();
@@ -649,8 +650,9 @@
             }
             await Task.Delay(400); // Giảm xuống cho animation delete
 
-            // Đóng modal
-            await JS.InvokeVoidAsync("eval", "$('#deleteUserModal').modal('hide')");
+            // Ẩn modal trước bằng state
+            isDeleteModalVisible = false;
+            StateHasChanged();
 
             // Reset state
             deleteUserId = string.Empty;

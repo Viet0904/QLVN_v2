@@ -1,4 +1,4 @@
-namespace WebBlazor.Models
+namespace Common.Model.UsGroup
 {
     public class UsGroupFormModel
     {

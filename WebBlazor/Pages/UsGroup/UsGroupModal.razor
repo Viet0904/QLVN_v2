@@ -3,106 +3,76 @@
 @inject IJSRuntime JS
 
 <!-- Add/Edit Group Modal -->
-<div class="modal fade" id="groupModal" tabindex="-1" role="dialog" data-backdrop="static" style="z-index: 1050;">
+<div class="modal fade" id="groupModal" tabindex="-1" role="dialog" aria-labelledby="groupModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">@(IsEditMode ? "Chỉnh sửa nhóm" : "Thêm nhóm mới")</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="CloseModal">
+                <h5 class="modal-title" id="groupModalLabel">@(IsEditMode ? "Chỉnh sửa Nhóm" : "Thêm mới Nhóm")</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="OnClose">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <EditForm Model="GroupModel" OnValidSubmit="HandleSubmit">
+                <EditForm Model="GroupModel" OnValidSubmit="OnSubmit">
                     <DataAnnotationsValidator />
                     
-                    <div class="form-group">
-                        <label>Mã nhóm <span class="text-danger">*</span></label>
-                        <InputText @bind-Value="GroupModel.Id" class="form-control" placeholder="Nhập mã nhóm" disabled="@IsEditMode" />
-                        <ValidationMessage For="@(() => GroupModel.Id)" class="text-danger" />
+                    @if (IsEditMode)
+                    {
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-bold">Mã Nhóm</label>
+                            <input type="text" class="form-control bg-light" value="@GroupModel.Id" readonly disabled />
+                            <small class="text-muted">Mã nhóm không thể thay đổi.</small>
+                        </div>
+                    }
+
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold">Tên Nhóm <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="GroupModel.Name" placeholder="Nhập tên nhóm..." />
+                        <ValidationMessage For="@(() => GroupModel.Name)" />
                     </div>
 
-                    <div class="form-group">
-                        <label>Tên nhóm <span class="text-danger">*</span></label>
-                        <InputText @bind-Value="GroupModel.Name" class="form-control" placeholder="Nhập tên nhóm" />
-                        <ValidationMessage For="@(() => GroupModel.Name)" class="text-danger" />
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold">Ghi chú</label>
+                        <InputTextArea class="form-control" @bind-Value="GroupModel.Note" rows="3" placeholder="Nhập ghi chú (nếu có)..." />
                     </div>
 
-                    <div class="form-group">
-                        <label>Ghi chú</label>
-                        <InputTextArea @bind-Value="GroupModel.Note" class="form-control" rows="3" placeholder="Nhập ghi chú" />
-                    </div>
+                    @if (IsEditMode)
+                    {
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-bold">Trạng thái</label>
+                            <select class="form-control" @bind="GroupModel.RowStatus">
+                                <option value="1">Hoạt động</option>
+                                <option value="0">Ngừng hoạt động</option>
+                            </select>
+                        </div>
+                    }
 
-                    <div class="form-group">
-                        <label>Trạng thái</label>
-                        <InputSelect @bind-Value="GroupModel.RowStatus" class="form-control">
-                            <option value="1">Hoạt động</option>
-                            <option value="0">Ngừng hoạt động</option>
-                        </InputSelect>
+                    <div class="modal-footer px-0 pb-0 pt-3">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="OnClose">Đóng</button>
+                        <button type="submit" class="btn btn-primary" disabled="@IsProcessing">
+                            @if (IsProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span> Đang lưu...</span>
+                            }
+                            else
+                            {
+                                <span>Lưu thay đổi</span>
+                            }
+                        </button>
                     </div>
                 </EditForm>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="CloseModal">
-                    <i class="feather icon-x"></i> Đóng
-                </button>
-                <button type="button" class="btn btn-primary" @onclick="HandleSubmit" disabled="@IsProcessing">
-                    @if (IsProcessing)
-                    {
-                        <span class="spinner-border spinner-border-sm me-1"></span>
-                        <span>Đang xử lý...</span>
-                    }
-                    else
-                    {
-                        <i class="feather icon-save"></i>
-                        <span>@(IsEditMode ? "Cập nhật" : "Thêm mới")</span>
-                    }
-                </button>
-            </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteGroupModal" tabindex="-1" role="dialog" style="z-index: 1050;">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
-        <div class="modal-content">
-            <div class="modal-header bg-danger">
-                <h5 class="modal-title text-white">Xác nhận xóa</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" @onclick="CloseDeleteModal">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center" style="padding: 30px;">
-                <i class="feather icon-trash-2 text-danger" style="font-size: 50px; display: block; margin-bottom: 20px;"></i>
-                <p>Bạn có chắc chắn muốn xóa nhóm:</p>
-                <h5 class="font-weight-bold">@DeleteGroupName</h5>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="CloseDeleteModal">Hủy</button>
-                <button type="button" class="btn btn-danger" @onclick="ConfirmDelete" disabled="@IsProcessing">
-                    @if (IsProcessing)
-                    {
-                        <span class="spinner-border spinner-border-sm"></span>
-                    }
-                    else
-                    {
-                        <span>Xóa</span>
-                    }
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 @code {
-    [Parameter] public WebBlazor.Models.UsGroupFormModel GroupModel { get; set; } = new();
+    [Parameter] public UsGroupFormModel GroupModel { get; set; } = new();
     [Parameter] public bool IsEditMode { get; set; }
     [Parameter] public bool IsProcessing { get; set; }
-    [Parameter] public string DeleteGroupName { get; set; } = string.Empty;
-
     [Parameter] public EventCallback OnSubmit { get; set; }
-    [Parameter] public EventCallback OnDelete { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     private async Task HandleSubmit()
@@ -110,18 +80,8 @@
         await OnSubmit.InvokeAsync();
     }
 
-    private async Task ConfirmDelete()
-    {
-        await OnDelete.InvokeAsync();
-    }
-
     private async Task CloseModal()
     {
         await OnClose.InvokeAsync();
-    }
-
-    private async Task CloseDeleteModal()
-    {
-        await JS.InvokeVoidAsync("eval", "$('#deleteGroupModal').modal('hide')");
     }
 }

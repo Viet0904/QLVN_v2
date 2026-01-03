@@ -1,11 +1,12 @@
 ﻿window.dataTableInstances = {};
+window.dataTableConfigs = {};
 window.selectedUserRows = {};
 window.blazorInstance = null;
 
 // Register Blazor instance
 window.registerBlazorInstance = function (instance) {
     window.blazorInstance = instance;
-    console.log('✅ Blazor instance registered');
+    // console.log('✅ Blazor instance registered');
 };
 
 // ==========================================
@@ -792,125 +793,24 @@ window.updateUserDataTableData = function (selector, paginatedData) {
 };
 
 // ==========================================
-// ROW ANIMATIONS - FAST VERSION - tìm row ngay trong DataTable
+// GENERIC ROW ANIMATIONS
 // ==========================================
-window.addUserRowSmooth = function (selector, userId) {
-    console.log('🎬 addUserRowSmooth called for:', userId);
-    
-    var targetUserId = String(userId);
-    var table = window.dataTableInstances[selector];
-    
-    if (!table) {
-        console.warn('⚠️ DataTable not found');
-        return;
-    }
-    
-    // Tìm row trực tiếp trong DataTable API - nhanh hơn DOM selector
-    var foundRow = null;
-    table.rows().every(function() {
-        var rowNode = this.node();
-        if (rowNode) {
-            var rowId = $(rowNode).attr('data-user-id');
-            // So sánh với cột đầu tiên (ID) nếu không có attr
-            if (!rowId) {
-                var rowData = this.data();
-                if (rowData && rowData[0] == targetUserId) {
-                    $(rowNode).attr('data-user-id', targetUserId);
-                    rowId = targetUserId;
-                }
-            }
-            if (rowId == targetUserId) {
-                foundRow = $(rowNode);
-                return false; // break
-            }
-        }
-    });
-    
-    if (foundRow && foundRow.length > 0) {
-        console.log('✅ Found row for ADD animation immediately');
-        applyAddHighlight(foundRow, selector);
-    } else {
-        // Fallback: thử tìm bằng DOM sau 50ms
-        setTimeout(function() {
-            var $row = $(selector).find('tbody tr').filter(function() {
-                return $(this).find('td:first').text().trim() == targetUserId ||
-                       $(this).attr('data-user-id') == targetUserId;
-            });
-            if ($row.length > 0) {
-                $row.attr('data-user-id', targetUserId);
-                applyAddHighlight($row, selector);
-            } else {
-                console.warn('⚠️ Row not found for ADD userId:', targetUserId);
-            }
-        }, 50);
-    }
+window.addDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-id') {
+    applyGenericHighlight(selector, rowId, 'add', idAttrName);
 };
 
-window.updateUserRowSmooth = function (selector, userId) {
-    console.log('🎬 updateUserRowSmooth called for:', userId);
-    
-    var targetUserId = String(userId);
-    var table = window.dataTableInstances[selector];
-    
-    if (!table) {
-        console.warn('⚠️ DataTable not found');
-        return;
-    }
-    
-    // Tìm row trực tiếp trong DataTable API
-    var foundRow = null;
-    table.rows().every(function() {
-        var rowNode = this.node();
-        if (rowNode) {
-            var rowId = $(rowNode).attr('data-user-id');
-            if (!rowId) {
-                var rowData = this.data();
-                if (rowData && rowData[0] == targetUserId) {
-                    $(rowNode).attr('data-user-id', targetUserId);
-                    rowId = targetUserId;
-                }
-            }
-            if (rowId == targetUserId) {
-                foundRow = $(rowNode);
-                return false;
-            }
-        }
-    });
-    
-    if (foundRow && foundRow.length > 0) {
-        console.log('✅ Found row for UPDATE animation immediately');
-        applyUpdateHighlight(foundRow, selector);
-    } else {
-        // Fallback
-        setTimeout(function() {
-            var $row = $(selector).find('tbody tr').filter(function() {
-                return $(this).find('td:first').text().trim() == targetUserId ||
-                       $(this).attr('data-user-id') == targetUserId;
-            });
-            if ($row.length > 0) {
-                $row.attr('data-user-id', targetUserId);
-                applyUpdateHighlight($row, selector);
-            } else {
-                console.warn('⚠️ Row not found for UPDATE userId:', targetUserId);
-            }
-        }, 50);
-    }
+window.updateDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-id') {
+    applyGenericHighlight(selector, rowId, 'update', idAttrName);
 };
 
-window.deleteUserRowSmooth = function(selector, userId) {
-    console.log('🎬 deleteUserRowSmooth called for:', userId);
-    
-    var targetUserId = String(userId);
-    
-    // Tìm bằng attr hoặc text trong cột đầu tiên
+window.deleteDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-id') {
+    var targetId = String(rowId);
     var $row = $(selector).find('tbody tr').filter(function() {
-        return $(this).attr('data-user-id') == targetUserId ||
-               $(this).find('td:first').text().trim() == targetUserId;
+        return $(this).attr(idAttrName) == targetId ||
+               $(this).find('td:first').text().trim() == targetId;
     });
     
     if ($row.length > 0) {
-        console.log('✅ Animating delete for userId:', targetUserId);
-        
         $row.css({
             'transition': 'all 0.4s ease-out',
             'position': 'relative',
@@ -935,10 +835,46 @@ window.deleteUserRowSmooth = function(selector, userId) {
                 'transform': 'scale(0.95) translateX(20px)'
             });
         }, 300);
-    } else {
-        console.warn('⚠️ Row not found for delete userId:', targetUserId);
     }
 };
+
+function applyGenericHighlight(selector, rowId, type, idAttrName) {
+    var targetId = String(rowId);
+    var table = window.dataTableInstances[selector];
+    if (!table) return;
+
+    var foundRow = null;
+    table.rows().every(function() {
+        var rowNode = this.node();
+        if (rowNode) {
+            var actualId = $(rowNode).attr(idAttrName);
+            if (!actualId && this.data()[0] == targetId) {
+                $(rowNode).attr(idAttrName, targetId);
+                actualId = targetId;
+            }
+            if (actualId == targetId) {
+                foundRow = $(rowNode);
+                return false;
+            }
+        }
+    });
+
+    if (!foundRow || foundRow.length === 0) {
+        foundRow = $(selector).find('tbody tr').filter(function() {
+            return $(this).attr(idAttrName) == targetId || $(this).find('td:first').text().trim() == targetId;
+        });
+    }
+
+    if (foundRow && foundRow.length > 0) {
+        if (type === 'add') applyAddHighlight(foundRow, selector);
+        else applyUpdateHighlight(foundRow, selector);
+    }
+}
+
+// Aliases for compatibility
+window.addUserRowSmooth = (s, id) => window.addDataTableRowSmooth(s, id, 'data-user-id');
+window.updateUserRowSmooth = (s, id) => window.updateDataTableRowSmooth(s, id, 'data-user-id');
+window.deleteUserRowSmooth = (s, id) => window.deleteDataTableRowSmooth(s, id, 'data-user-id');
 
 // Helper function cho ADD highlight
 function applyAddHighlight($row, selector) {
@@ -1132,3 +1068,213 @@ function formatDateTime(dateString) {
         return '';
     }
 }
+
+// ==========================================
+// GROUP DATA TABLE - FULL FEATURES
+// ==========================================
+window.initGroupDataTable = function (selector, config) {
+    console.log('🚀 Initializing GroupDataTable:', selector, config);
+    
+    config = config || {};
+    var columnNames = config.columnNames || ['Mã Nhóm', 'Tên Nhóm', 'Ghi chú', 'Trạng thái', 'Thao tác'];
+    var defaultHiddenColumns = config.hiddenColumns || [];
+
+    const table = $(selector).DataTable({
+        responsive: false,
+        paging: false,
+        ordering: true,
+        info: false,
+        searching: false, // Changed from true
+        scrollY: 'calc(100vh - 350px)',
+        scrollX: true,
+        scrollCollapse: true,
+        autoWidth: false, // CRITICAL: Disable autoWidth to handle external resize better
+        deferRender: true,
+        order: [[1, "asc"]],
+        lengthChange: false, // Kept from original
+
+        layout: {
+            topStart: null, topEnd: null, bottomStart: null, bottomEnd: null
+        },
+
+        language: {
+            zeroRecords: "Không tìm thấy dữ liệu phù hợp",
+            emptyTable: "Không có dữ liệu",
+            paginate: { first: '«', last: '»', next: '›', previous: '‹' }
+        },
+
+        columnDefs: [
+            { orderable: false, targets: -1 },
+            { width: '100px', targets: 0 },
+            { width: '120px', targets: -1 }
+        ],
+
+        drawCallback: function (settings) {
+            setTimeout(function () {
+                bindGroupRowEvents(selector);
+            }, 50);
+        },
+
+        initComplete: function () {
+            var api = this.api();
+            var wrapper = $(api.table().container());
+            var totalColumns = api.columns().nodes().length;
+
+            createCustomToolbar(api, wrapper, columnNames, totalColumns);
+
+            api.columns().every(function (index) {
+                var column = this;
+                var header = $(column.header());
+                if (index === totalColumns - 1) return;
+                createColumnMenu(column, header, index, api);
+            });
+            
+            setTimeout(function () {
+                api.columns.adjust();
+            }, 150);
+        }
+    });
+
+    window.dataTableInstances[selector] = table;
+    window.dataTableConfigs[selector] = config; // Store config for update
+
+    // Responsive adjust
+    var resizeTimeout;
+    $(window).off('resize.dtGroupResize').on('resize.dtGroupResize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            table.columns.adjust();
+        }, 250);
+    });
+
+    // Sidebar Toggle Observer
+    setupSidebarToggleObserver(selector);
+
+    return table;
+};
+
+function setupSidebarToggleObserver(selector) {
+    // Watch for class changes on body or .pcoded which indicate sidebar toggle
+    var targetNode = document.querySelector('.pcoded') || document.body;
+    if (!targetNode) return;
+
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === "class" || mutation.attributeName === "vertical-nav-type") {
+                console.log('📐 Sidebar state changed, re-adjusting table:', selector);
+                window.reAdjustTable(selector);
+            }
+        });
+    });
+
+    observer.observe(targetNode, { attributes: true });
+}
+
+function bindGroupRowEvents(selector) {
+    var $table = $(selector);
+    console.log('🔗 Binding Group row events for:', selector);
+
+    $table.find('tbody').off('click', '.btn-edit-group').on('click', '.btn-edit-group', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var groupId = $(this).attr('data-id');
+        console.log('✏️ Edit clicked for GRP ID:', groupId);
+        if (groupId && window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('EditGroup', groupId.toString())
+                .then(() => console.log('✅ Blazor EditGroup called'))
+                .catch(err => console.error('❌ Blazor EditGroup error:', err));
+        } else {
+            console.warn('⚠️ Cannot edit group: groupId or blazorInstance missing', groupId, !!window.blazorInstance);
+        }
+    });
+
+    $table.find('tbody').off('click', '.btn-delete-group').on('click', '.btn-delete-group', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var groupId = $(this).attr('data-id');
+        var groupName = $(this).attr('data-name');
+        console.log('🗑️ Delete clicked for GRP:', groupId, groupName);
+        if (groupId && window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('DeleteGroup', groupId.toString(), (groupName || "").toString())
+                .then(() => console.log('✅ Blazor DeleteGroup called'))
+                .catch(err => console.error('❌ Blazor DeleteGroup error:', err));
+        }
+    });
+}
+
+window.reAdjustTable = function (selector) {
+    var table = window.dataTableInstances[selector];
+    if (table) {
+        console.log('🔄 Re-adjusting table:', selector);
+        setTimeout(function() {
+            table.columns.adjust().draw(false);
+        }, 300); // Wait for sidebar animation
+    }
+};
+
+window.updateGroupDataTableData = function (selector, paginatedData) {
+    var table = window.dataTableInstances[selector];
+    if (!table) return;
+
+    try {
+        var pageSize = paginatedData?.pageSize || 10;
+        var wrapper = $(table.table().container());
+        var lengthDropdown = wrapper.find('.dt-page-length');
+        if (lengthDropdown.length > 0) {
+            lengthDropdown.val(pageSize.toString());
+        }
+
+        table.clear();
+
+        if (paginatedData && paginatedData.items) {
+            var config = window.dataTableConfigs[selector] || {};
+            var columns = config.columns || ['id', 'name', 'note', 'rowStatus'];
+
+            paginatedData.items.forEach(function (group) {
+                var rowData = [];
+                columns.forEach(function(col) {
+                    // Try all case variations: original, lowercase first, uppercase first
+                    var val = group[col];
+                    if (val === undefined) {
+                        var lower = col.charAt(0).toLowerCase() + col.slice(1);
+                        val = group[lower];
+                    }
+                    if (val === undefined) {
+                        var upper = col.charAt(0).toUpperCase() + col.slice(1);
+                        val = group[upper];
+                    }
+                    if (val === undefined) val = "";
+
+                    if (col.toLowerCase() === 'rowstatus') {
+                        var status = (val !== "" && val !== undefined) ? val : 1;
+                        val = status === 1 
+                            ? '<span class="badge bg-success">Hoạt động</span>' 
+                            : '<span class="badge bg-danger">Ngừng hoạt động</span>';
+                    }
+                    rowData.push(val);
+                });
+
+                var id = group.id || group.Id;
+                var name = group.name || group.Name;
+                var actions = `
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm btn-edit-group" data-id="${id}" title="Sửa"><i class="feather icon-edit"></i></button>
+                        <button class="btn btn-danger btn-sm btn-delete-group" data-id="${id}" data-name="${name}" title="Xóa"><i class="feather icon-trash-2"></i></button>
+                    </div>
+                `;
+                rowData.push(actions);
+
+                var rowNode = table.row.add(rowData).node();
+                if (rowNode) $(rowNode).attr('data-group-id', id);
+            });
+        }
+        table.draw(false);
+        setTimeout(() => bindGroupRowEvents(selector), 100);
+    } catch (e) {
+        console.error('Error updating group table:', e);
+    }
+};
+
+window.addGroupRowSmooth = (s, id) => window.addDataTableRowSmooth(s, id, 'data-group-id');
+window.updateGroupRowSmooth = (s, id) => window.updateDataTableRowSmooth(s, id, 'data-group-id');
+window.deleteGroupRowSmooth = (s, id) => window.deleteDataTableRowSmooth(s, id, 'data-group-id');

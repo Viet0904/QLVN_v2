@@ -6,6 +6,7 @@ using Common.Library.Helper;
 using Common.Model.Common;
 using Common.Model.SysMenu;
 using Common.Service.Common;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,8 +15,8 @@ namespace Common.Service
 {
     public class SysMenuService : BaseService
     {
-        public SysMenuService(QLVN_DbContext dbContext, IMapper mapper)
-            : base(dbContext, mapper)
+        public SysMenuService(QLVN_DbContext dbContext, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+            : base(dbContext, mapper, httpContextAccessor)
         {
         }
 

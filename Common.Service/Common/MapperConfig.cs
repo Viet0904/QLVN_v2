@@ -71,11 +71,11 @@ namespace Common.Service.Common
                 .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.UpdatedAt)))
                 .ForMember(dest => dest.UpdatedName, opt => opt.MapFrom(src => FormatUser(src.UpdatedBy ?? string.Empty, context)));
 
-            //cfg.CreateMap<UsGroupCreateModel, UsGroup>()
-            //    .IgnoreAllNonExisting();
+            cfg.CreateMap<UsGroupCreateModel, UsGroup>()
+                .IgnoreAllNonExisting();
 
-            //cfg.CreateMap<UsGroupUpdateModel, UsGroup>()
-            //    .IgnoreAllNonExisting();
+            cfg.CreateMap<UsGroupUpdateModel, UsGroup>()
+                .IgnoreAllNonExisting();
             #endregion
 
 

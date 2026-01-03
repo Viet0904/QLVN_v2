@@ -1,320 +1,317 @@
 @page "/system_group"
 @using WebBlazor.Services
-@using WebBlazor.Models
 @using Common.Model.UsGroup
 @using Common.Model.UsUser
 @using Common.Model.UsUserPermission
 @using Common.Model.Common
-@using DataTables.Blazor
-@using DataTables.Blazor.Options
 @inject UserApiClient GroupApi
 @inject IJSRuntime JS
 @inject NotificationService Notification
+@using WebBlazor.Components
+@implements IDisposable
 
-<div class="pcoded-content">
-    <div class="pcoded-inner-content">
-        <div class="main-body">
-            <div class="page-wrapper">
-                <!-- Page-header start -->
-                <div class="page-header">
-                    <div class="row align-items-end">
-                        <div class="col-lg-8">
-                            <div class="page-header-title">
-                                <div class="d-inline">
-                                    <h4>Danh sách Nhóm người dùng</h4>
-                                    <span>Quản lý nhóm và phân quyền người dùng</span>
-                                </div>
-                            </div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Danh sách Nhóm người dùng</h5>
+                <div class="card-header-right">
+                    <ul class="list-unstyled card-option d-inline-block mb-0">
+                        <li><i class="feather icon-maximize full-card"></i></li>
+                        <li><i class="feather icon-minus minimize-card"></i></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card-block">
+                @if (isLoading && !dataTableInitialized)
+                {
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                        <div class="col-lg-4">
-                            <div class="page-header-breadcrumb">
-                                <button class="btn btn-primary" @onclick="ShowAddModal">
-                                    <i class="feather icon-plus"></i> Thêm mới
+                        <p class="mt-2">Đang tải dữ liệu...</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive" @ref="tableContainerRef">
+                        <table id="@tableId" class="table table-striped table-hover table-bordered" style="width:100%">
+                            <thead class="table-light">
+                                <tr>
+                                    @foreach (var col in TableColumns)
+                                    {
+                                        <th style="@(col.Width != null ? $"width: {col.Width}" : "")">@col.DisplayName</th>
+                                    }
+                                    <th style="width: 120px;">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @* DataTable manage data *@
+                            </tbody>
+                        </table>
+                        
+                        <div class="dt-custom-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                            <div class="dt-pagination-info">
+                                @if (paginatedGroups != null && paginatedGroups.TotalRecords > 0)
+                                {
+                                    <span>
+                                        Hiển thị từ @((paginationRequest.PageNumber - 1) * paginationRequest.PageSize + 1)
+                                        đến @(Math.Min(paginationRequest.PageNumber * paginationRequest.PageSize, paginatedGroups.TotalRecords))
+                                        trong @paginatedGroups.TotalRecords bản ghi
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Không có dữ liệu phù hợp</span>
+                                }
+                            </div>
+                            <div class="dt-pagination-buttons">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => ChangePage(1)"
+                                        disabled="@(paginatedGroups == null || !paginatedGroups.HasPreviousPage)">
+                                    «
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => ChangePage(paginationRequest.PageNumber - 1)"
+                                        disabled="@(paginatedGroups == null || !paginatedGroups.HasPreviousPage)">
+                                    ‹
+                                </button>
+                                <span class="mx-2">
+                                    Trang @paginationRequest.PageNumber / @(paginatedGroups?.TotalPages ?? 1)
+                                </span>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => ChangePage(paginationRequest.PageNumber + 1)"
+                                        disabled="@(paginatedGroups == null || !paginatedGroups.HasNextPage)">
+                                    ›
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => ChangePage(paginatedGroups?.TotalPages ?? 1)"
+                                        disabled="@(paginatedGroups == null || !paginatedGroups.HasNextPage)">
+                                    »
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- Page-header end -->
-
-                <div class="page-body">
-                    <div class="row">
-                        <div class="col-sm-12">
-                            <div class="card">
-                                <div class="card-block">
-                                    <div class="dt-responsive table-responsive">
-                                        <DataTable Options="@_options" class="table table-striped table-bordered nowrap w-100">
-                                            <thead>
-                                                <tr>
-                                                    <th>Mã Nhóm</th>
-                                                    <th>Tên Nhóm</th>
-                                                    <th>Ghi chú</th>
-                                                    <th>Trạng thái</th>
-                                                    <th style="width: 100px;">Thao tác</th>
-                                                </tr>
-                                            </thead>
-                                            <DataTableColumn Data="id" />
-                                            <DataTableColumn Data="name" />
-                                            <DataTableColumn Data="note" />
-                                            <DataTableColumn Data="rowStatus" Render="@("DataTableFunctions.renderStatus")" />
-                                            <DataTableColumn Data="id" Orderable="false" Render="@("DataTableFunctions.renderActions")" />
-                                        </DataTable>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(SelectedGroupId))
-                    {
-                        <div class="row mt-4" id="permission-matrix-section">
-                            <div class="col-sm-12">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>Ma trận quyền hạn - Nhóm @SelectedGroupName</h5>
-                                        <div class="card-header-right">
-                                            <button class="btn btn-success btn-sm" @onclick="SavePermissions" disabled="@IsSavingPermissions">
-                                                @if (IsSavingPermissions)
-                                                {
-                                                    <span class="spinner-border spinner-border-sm"></span>
-                                                }
-                                                else
-                                                {
-                                                    <i class="feather icon-save"></i> <span>Lưu quyền</span>
-                                                }
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-block">
-                                        <div class="table-responsive" style="max-height: 500px; overflow: auto;">
-                                            <table class="table table-bordered table-hover">
-                                                <thead class="bg-light sticky-top">
-                                                    <tr>
-                                                        <th rowspan="2" class="align-middle">Chức năng (Menu)</th>
-                                                        @foreach (var user in GroupUsers)
-                                                        {
-                                                            <th colspan="7" class="text-center">@user.Name</th>
-                                                        }
-                                                    </tr>
-                                                    <tr>
-                                                        @foreach (var user in GroupUsers)
-                                                        {
-                                                            <th class="text-center" title="Xem">X</th>
-                                                            <th class="text-center" title="Thêm">T</th>
-                                                            <th class="text-center" title="Sửa">S</th>
-                                                            <th class="text-center" title="Xóa">X</th>
-                                                            <th class="text-center" title="Sửa HL">SH</th>
-                                                            <th class="text-center" title="Xóa HL">XH</th>
-                                                            <th class="text-center" title="Xuất DL">E</th>
-                                                        }
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @if (PermissionMatrix != null)
-                                                    {
-                                                        @foreach (var menuId in PermissionMatrix.Select(p => p.MenuId).Distinct())
-                                                        {
-                                                            var menuName = PermissionMatrix.First(p => p.MenuId == menuId).MenuName;
-                                                            <tr>
-                                                                <td>@menuName</td>
-                                                                @foreach (var user in GroupUsers)
-                                                                {
-                                                                    var perm = PermissionMatrix.FirstOrDefault(p => p.UserId == user.Id && p.MenuId == menuId);
-                                                                    if (perm != null)
-                                                                    {
-                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Xem" /></td>
-                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Them" /></td>
-                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Sua" /></td>
-                                                                        <td class="text-center"><input type="checkbox" @bind="perm.Xoa" /></td>
-                                                                        <td class="text-center"><input type="checkbox" @bind="perm.SuaHangLoat" /></td>
-                                                                        <td class="text-center"><input type="checkbox" @bind="perm.XoaHangLoat" /></td>
-                                                                        <td class="text-center"><input type="checkbox" @bind="perm.XuatDuLieu" /></td>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <td colspan="7" class="text-center text-muted">-</td>
-                                                                    }
-                                                                }
-                                                            </tr>
-                                                        }
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
+                }
             </div>
         </div>
+
     </div>
 </div>
 
-<UsGroupModal 
-    GroupModel="CurrentGroup" 
-    IsEditMode="IsEditMode" 
-    IsProcessing="IsProcessing" 
-    DeleteGroupName="@DeleteGroupName"
-    OnSubmit="HandleSubmit"
-    OnDelete="OnConfirmDelete"
-    OnClose="CloseModal" />
+<!-- Group Modal Component -->
+<UsGroupModal GroupModel="GroupModel"
+              IsEditMode="isEditMode"
+              IsProcessing="isProcessing"
+              OnSubmit="HandleSaveGroup"
+              OnClose="CloseModals" />
+
+<!-- Generic Delete Confirmation Modal -->
+<DeleteConfirmationModal IsVisible="@isDeleteModalVisible"
+                        IsProcessing="@isProcessing"
+                        ItemName="@deleteGroupName"
+                        OnConfirm="HandleDeleteGroup"
+                        OnCancel="CloseModals" />
 
 @code {
-    private DataTableOptions _options = new();
-    private UsGroupFormModel CurrentGroup = new();
-    private List<UsUserViewModel> GroupUsers = new();
-    private List<UsUserPermissionViewModel> PermissionMatrix = new();
+    private PaginatedResponse<UsGroupViewModel> paginatedGroups = new();
+    private PaginatedRequest paginationRequest = new() { PageNumber = 1, PageSize = 10 };
     
-    private string SelectedGroupId = "";
-    private string SelectedGroupName = "";
-    private string DeleteGroupId = "";
-    private string DeleteGroupName = "";
+    private UsGroupFormModel GroupModel = new();
     
-    private bool IsEditMode = false;
-    private bool IsProcessing = false;
-    private bool IsSavingPermissions = false;
-    private bool isLoading = true;
-    private bool layoutInitialized = false;
-    protected override void OnInitialized()
+    // Header dynamics configuration
+    private List<TableColumnConfig> TableColumns = new()
     {
-        _options = new DataTableOptions
-        {
-            ServerSide = true,
-            Processing = true,
-            Ajax = new AjaxOptions("http://localhost:5084/api/Group/paginated")
-        };
+        new TableColumnConfig { Property = "Id", DisplayName = "Mã Nhóm", Width = "15%" },
+        new TableColumnConfig { Property = "Name", DisplayName = "Tên Nhóm", Width = "30%" },
+        new TableColumnConfig { Property = "Note", DisplayName = "Ghi chú", Width = "35%" },
+        new TableColumnConfig { Property = "RowStatus", DisplayName = "Trạng thái", Width = "20%" }
+    };
+
+    public class TableColumnConfig
+    {
+        public string Property { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string? Width { get; set; }
+    }
+    
+    private string deleteGroupId = string.Empty;
+    private string deleteGroupName = string.Empty;
+    private bool isDeleteModalVisible = false;
+    private bool isEditMode = false;
+    private bool isProcessing = false;
+    private bool isLoading = true;
+    private bool dataTableInitialized = false;
+    private bool layoutInitialized = false;
+    private string tableId = "groupDataTable";
+    private ElementReference tableContainerRef;
+    private DotNetObjectReference<UsGroupList>? objRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        objRef = DotNetObjectReference.Create(this);
+        await LoadData();
         isLoading = false;
     }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!isLoading && !layoutInitialized)
         {
             layoutInitialized = true;
-            try
+            if (!dataTableInitialized)
             {
-                // Reload layout scripts if needed
+                await JS.InvokeVoidAsync("registerBlazorInstance", objRef);
+                
+                var config = new {
+                    columnNames = TableColumns.Select(c => c.DisplayName).Concat(new[] { "Thao tác" }).ToArray(),
+                    columns = TableColumns.Select(c => c.Property).ToArray(),
+                    hiddenColumns = new string[] { }
+                };
+
+                await JS.InvokeVoidAsync("initGroupDataTable", $"#{tableId}", config);
+                dataTableInitialized = true;
+                await JS.InvokeVoidAsync("updateGroupDataTableData", $"#{tableId}", paginatedGroups);
+                
+                // Scripts reload
                 await JS.InvokeVoidAsync("eval", "if(typeof $.getScript === 'function') { $.getScript('js/pcoded.min.js'); $.getScript('js/vartical-layout.min.js'); $.getScript('js/script.js'); }");
             }
-            catch { }
-            finally
-            {
-                await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
-            }
+            await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
         }
     }
 
-
-    [JSInvokable]
-    public async Task SelectGroup(string id, string name)
+    private async Task LoadData()
     {
-        SelectedGroupId = id;
-        SelectedGroupName = name;
-        GroupUsers = await GroupApi.GetUsersByGroupIdAsync(id);
-        PermissionMatrix = await GroupApi.GetPermissionMatrixAsync(id);
-        StateHasChanged();
-        
-        // Scroll to matrix
-        await JS.InvokeVoidAsync("eval", "$('html, body').animate({ scrollTop: $('#permission-matrix-section').offset().top - 100 }, 500);");
+        paginatedGroups = await GroupApi.GetPaginatedGroupsAsync(paginationRequest);
     }
+
+    private async Task ChangePage(int pageNumber)
+    {
+        paginationRequest.PageNumber = pageNumber;
+        await RefreshData();
+    }
+
+    [JSInvokable("ChangePageSize")]
+    public async Task ChangePageSize(int pageSize)
+    {
+        paginationRequest.PageSize = pageSize;
+        paginationRequest.PageNumber = 1;
+        await RefreshData();
+    }
+
+    [JSInvokable("SearchUsers")] // Search logic is SERVER-SIDE
+    public async Task SearchGroups(string term)
+    {
+        paginationRequest.SearchTerm = term;
+        paginationRequest.PageNumber = 1;
+        await RefreshData();
+    }
+
+    private async Task RefreshData()
+    {
+        paginatedGroups = await GroupApi.GetPaginatedGroupsAsync(paginationRequest);
+        if (dataTableInitialized)
+        {
+            await JS.InvokeVoidAsync("updateGroupDataTableData", $"#{tableId}", paginatedGroups);
+        }
+        StateHasChanged();
+    }
+
 
     [JSInvokable]
     public async Task EditGroup(string id)
     {
-        var group = await GroupApi.GetByIdAsync(id); // I need to make sure this exists in Client
+        var group = await GroupApi.GetGroupByIdAsync(id); 
         if (group != null)
         {
-            CurrentGroup = new UsGroupFormModel {
+            GroupModel = new UsGroupFormModel {
                 Id = group.Id,
                 Name = group.Name,
                 Note = group.Note,
                 RowStatus = group.RowStatus
             };
-            IsEditMode = true;
+            isEditMode = true;
             StateHasChanged();
             await JS.InvokeVoidAsync("eval", "$('#groupModal').modal('show')");
         }
     }
 
-    [JSInvokable]
-    public async Task DeleteGroup(string id, string name)
+    [JSInvokable("DeleteGroup")]
+    public async Task OpenDeleteModal(string id, string name)
     {
-        DeleteGroupId = id;
-        DeleteGroupName = name;
+        deleteGroupId = id;
+        deleteGroupName = name;
+        isDeleteModalVisible = true;
         StateHasChanged();
-        await JS.InvokeVoidAsync("eval", "$('#deleteGroupModal').modal('show')");
     }
 
-    private void ShowAddModal()
+    [JSInvokable("OpenAddModal")]
+    public async Task ShowAddModal()
     {
-        CurrentGroup = new UsGroupFormModel();
-        IsEditMode = false;
+        GroupModel = new UsGroupFormModel { RowStatus = 1 };
+        isEditMode = false;
         StateHasChanged();
-        JS.InvokeVoidAsync("eval", "$('#groupModal').modal('show')");
+        await JS.InvokeVoidAsync("eval", "$('#groupModal').modal('show')");
     }
 
-    private async Task HandleSubmit()
+    private async Task HandleSaveGroup()
     {
-        IsProcessing = true;
+        if (isProcessing) return;
+        isProcessing = true;
         try
         {
-            if (IsEditMode)
+            if (isEditMode)
             {
-                var model = new UsGroupUpdateModel { Id = CurrentGroup.Id, Name = CurrentGroup.Name, Note = CurrentGroup.Note, RowStatus = CurrentGroup.RowStatus };
-                await GroupApi.UpdateGroupAsync(model);
-                await Notification.ShowSuccessAsync("Cập nhật nhóm thành công");
+                var model = new UsGroupUpdateModel { Id = GroupModel.Id, Name = GroupModel.Name, Note = GroupModel.Note, RowStatus = GroupModel.RowStatus };
+                var updated = await GroupApi.UpdateGroupAsync(model);
+                if (updated != null)
+                {
+                    await Notification.ShowSuccessAsync("Cập nhật nhóm thành công");
+                    await RefreshData();
+                    await JS.InvokeVoidAsync("updateGroupRowSmooth", $"#{tableId}", updated.Id);
+                }
             }
             else
             {
-                var model = new UsGroupCreateModel { Id = CurrentGroup.Id, Name = CurrentGroup.Name, Note = CurrentGroup.Note };
-                await GroupApi.CreateGroupAsync(model);
-                await Notification.ShowSuccessAsync("Thêm nhóm mới thành công");
+                var model = new UsGroupCreateModel { Name = GroupModel.Name, Note = GroupModel.Note };
+                var created = await GroupApi.CreateGroupAsync(model);
+                if (created != null)
+                {
+                    await Notification.ShowSuccessAsync("Thêm nhóm mới thành công");
+                    await RefreshData();
+                    await JS.InvokeVoidAsync("addGroupRowSmooth", $"#{tableId}", created.Id);
+                }
             }
+            await CloseModals();
+        }
+        catch (Exception ex)
+        {
+            await Notification.ShowErrorAsync(ex.Message);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task HandleDeleteGroup()
+    {
+        if (isProcessing) return;
+        isProcessing = true;
+        try
+        {
+            await JS.InvokeVoidAsync("deleteGroupRowSmooth", $"#{tableId}", deleteGroupId);
+            await Task.Delay(400);
             
-            await CloseModal();
-            await JS.InvokeVoidAsync("eval", "$('.table').DataTable().ajax.reload(null, false);");
-        }
-        catch (Exception ex)
-        {
-            await Notification.ShowErrorAsync(ex.Message);
-        }
-        finally
-        {
-            IsProcessing = false;
-        }
-    }
-
-    private async Task OnConfirmDelete()
-    {
-        IsProcessing = true;
-        try
-        {
-            await GroupApi.DeleteGroupAsync(DeleteGroupId);
-            await Notification.ShowSuccessAsync("Xóa nhóm thành công");
-            await JS.InvokeVoidAsync("eval", "$('#deleteGroupModal').modal('hide')");
-            await JS.InvokeVoidAsync("eval", "$('.table').DataTable().ajax.reload(null, false);");
-        }
-        catch (Exception ex)
-        {
-            await Notification.ShowErrorAsync(ex.Message);
-        }
-        finally
-        {
-            IsProcessing = false;
-        }
-    }
-
-    private async Task SavePermissions()
-    {
-        IsSavingPermissions = true;
-        try
-        {
-            var result = await GroupApi.UpdatePermissionsAsync(PermissionMatrix);
+            var result = await GroupApi.DeleteGroupAsync(deleteGroupId);
             if (result)
-                await Notification.ShowSuccessAsync("Lưu quyền hạn thành công");
-            else
-                await Notification.ShowErrorAsync("Lưu quyền hạn thất bại");
+            {
+                await Notification.ShowSuccessAsync("Xóa nhóm thành công");
+                await RefreshData();
+            }
+            isDeleteModalVisible = false;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -322,27 +319,30 @@
         }
         finally
         {
-            IsSavingPermissions = false;
+            isProcessing = false;
         }
     }
 
-    private async Task CloseModal()
+    private async Task CloseModals()
     {
         await JS.InvokeVoidAsync("eval", "$('#groupModal').modal('hide')");
+        
+        GroupModel = new UsGroupFormModel();
+        deleteGroupId = string.Empty;
+        deleteGroupName = string.Empty;
+        isDeleteModalVisible = false;
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        objRef?.Dispose();
     }
 }
 
 <style>
-    .sticky-top {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: white;
-    }
-    .badge {
-        padding: 5px 10px;
-        border-radius: 4px;
-    }
-    .badge-success { background-color: #28a745; color: white; }
-    .badge-danger { background-color: #dc3545; color: white; }
+    .row-added-highlight { background-color: #d4edda !important; transition: background-color 2s; }
+    .row-updated-highlight { background-color: #fff3cd !important; transition: background-color 2s; }
+    .row-deleted-fade { opacity: 0.3; transform: translateX(20px); transition: all 0.5s; }
 </style>

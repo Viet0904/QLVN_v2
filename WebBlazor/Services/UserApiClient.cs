@@ -41,7 +41,7 @@ public class UserApiClient
         }
     }
 
-    public async Task<UsUserViewModel?> GetByIdAsync(string id)
+    public async Task<UsUserViewModel?> GetUserByIdAsync(string id)
     {
         try
         {
@@ -227,6 +227,31 @@ public class UserApiClient
     #endregion
 
     #region Group Methods
+
+    public async Task<UsGroupViewModel?> GetGroupByIdAsync(string id)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/Group/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    return JsonSerializer.Deserialize<UsGroupViewModel>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error fetching group {id}");
+            return null;
+        }
+    }
 
     public async Task<List<UsGroupViewModel>> GetAllGroupsAsync()
     {

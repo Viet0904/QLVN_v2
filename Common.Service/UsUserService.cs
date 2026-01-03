@@ -17,6 +17,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace Common.Service
 {
@@ -25,8 +26,8 @@ namespace Common.Service
         private readonly IConfiguration _config;
 
         //  Constructor nhận DbContext, IMapper và IConfiguration
-        public UsUserService(QLVN_DbContext dbContext, IMapper mapper, IConfiguration config)
-            : base(dbContext, mapper)
+        public UsUserService(QLVN_DbContext dbContext, IMapper mapper, IConfiguration config, IHttpContextAccessor httpContextAccessor)
+            : base(dbContext, mapper, httpContextAccessor)
         {
             _config = config;
         }
@@ -56,7 +57,7 @@ namespace Common.Service
             var result = await DbContext.UsUsers.Where(x => x.UserName == userName && x.Password == password && x.RowStatus == RowStatusConstant.Active).FirstOrDefaultAsync();
             if (result != null) return Mapper.Map<UsUserViewModel>(result);
             
-            throw new Exception(MessageConstant.USERNAME_PASSWORD_NOT_CORRECT);
+            throw new Exception(MessageConstant.NOT_CORRECT);
         }
 
         public async Task<UsUserViewModel> Create(UsUserCreateModel model)
@@ -64,36 +65,46 @@ namespace Common.Service
             var result = await DbContext.UsUsers.Where(x => x.UserName == model.UserName && x.RowStatus == RowStatusConstant.Active).FirstOrDefaultAsync();
             if (result != null)
             {
-                throw new Exception(MessageConstant.USERNAME_EXIST);
+                throw new Exception(MessageConstant.EXIST);
             }
 
-            using (var transaction = await DbContext.Database.BeginTransactionAsync())
+            var strategy = DbContext.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                try
+                using (var transaction = await DbContext.Database.BeginTransactionAsync())
                 {
-                    var item = Mapper.Map<UsUser>(model);
+                    try
+                    {
+                        var item = Mapper.Map<UsUser>(model);
 
-                generateId:
-                    item.Id = item.GroupId + GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
+                    generateId:
+                        item.Id = item.GroupId + GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
 
-                    var resultIdExist = await DbContext.UsUsers.Where(x => x.Id == item.Id).FirstOrDefaultAsync();
-                    if (resultIdExist != null)
-                        goto generateId;
+                        var resultIdExist = await DbContext.UsUsers.Where(x => x.Id == item.Id).FirstOrDefaultAsync();
+                        if (resultIdExist != null)
+                            goto generateId;
 
-                    item.Password = CryptorEngineHelper.Encrypt(model.Password);
-                    await DbContext.UsUsers.AddAsync(item);
-                    await DbContext.SaveChangesAsync();
+                        item.Password = CryptorEngineHelper.Encrypt(model.Password);
+                        item.CreatedAt = DateTime.Now;
+                        item.UpdatedAt = DateTime.Now;
+                        string currentUserId = GetCurrentUserId();
+                        item.CreatedBy = currentUserId;
+                        item.UpdatedBy = currentUserId;
 
-                    await transaction.CommitAsync();
+                        await DbContext.UsUsers.AddAsync(item);
+                        await DbContext.SaveChangesAsync();
 
-                    return await GetById(item.Id);
+                        await transaction.CommitAsync();
+
+                        return await GetById(item.Id);
+                    }
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
                 }
-                catch (Exception)
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
-            }
+            });
         }
         // Update người dùng, trả về lại thông tin người dùng để Blazor cập nhật lại UI, mà không cần refresh lại trang và chỉ reload lại 1 dòng 
         public async Task<UsUserViewModel> Update(UsUserUpdateModel model)
@@ -104,6 +115,8 @@ namespace Common.Service
                 if (result != null)
                 {
                     Mapper.Map(model, result);
+                    result.UpdatedAt = DateTime.Now;
+                    result.UpdatedBy = GetCurrentUserId();
                     await DbContext.SaveChangesAsync();
                     return await GetById(model.Id);
                 }
