@@ -76,10 +76,35 @@ namespace Common.Service
                 {
                     try
                     {
-                        var item = Mapper.Map<UsUser>(model);
+                        if (string.IsNullOrEmpty(model.GroupId))
+                        {
+                            throw new Exception("Vui lòng chọn nhóm trước khi lưu!");
+                        }
+
+                        var item = new UsUser();
+                        item.Name = model.Name;
+                        item.UserName = model.UserName;
+                        item.GroupId = model.GroupId;
+                        item.Email = model.Email;
+                        item.Phone = model.Phone;
+                        item.Gender = model.Gender;
+                        item.Cmnd = model.CMND;
+                        item.Address = model.Address;
+                        item.Note = model.Note;
+                        item.RowStatus = model.RowStatus;
 
                     generateId:
-                        item.Id = item.GroupId + GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
+                        string randomPart = GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
+                        string generatedId = item.GroupId + randomPart;
+                        
+                        // Safeguard: Truncate to 8 chars if it exceeds limit (DB constraint is 8)
+                        if (generatedId.Length > 8)
+                        {
+                            // If we have to truncate, we take the last 8 chars or some other logic?
+                            // Usually, we want to keep the suffix as it's the unique part.
+                            generatedId = generatedId.Substring(generatedId.Length - 8);
+                        }
+                        item.Id = generatedId;
 
                         var resultIdExist = await DbContext.UsUsers.AsNoTracking().Where(x => x.Id == item.Id).FirstOrDefaultAsync();
                         if (resultIdExist != null)
@@ -174,11 +199,11 @@ namespace Common.Service
         public async Task<PaginatedResponse<UsUserViewModel>> GetPaginated(PaginatedRequest request)
         {
             // Sử dụng IQueryable để query trực tiếp tại DB, tránh load toàn bộ vào RAM
-            // Thêm AsNoTracking để tăng tốc độ read
+            // Thêm AsNoTracking để tăng tốc độ thực thi
             var query = DbContext.UsUsers.AsNoTracking()
                 .Where(x => x.RowStatus == RowStatusConstant.Active);
 
-            // Search - Thực hiện tại server (DB)
+            // Search nâng cao: Tìm kiếm trên cả User và tên Group
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var searchLower = request.SearchTerm.ToLower();
@@ -186,32 +211,25 @@ namespace Common.Service
                     (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
                     (u.UserName != null && u.UserName.ToLower().Contains(searchLower)) ||
                     (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
-                    (u.Phone != null && u.Phone.ToLower().Contains(searchLower))
+                    (u.Phone != null && u.Phone.ToLower().Contains(searchLower)) ||
+                    (u.Group.Name != null && u.Group.Name.ToLower().Contains(searchLower)) // Search trực tiếp trên bảng Join
                 );
             }
 
-            // Sort - Thực hiện tại server (DB)
+            // Sorting
             query = request.SortColumn?.ToLower() switch
             {
-                "name" => request.SortDirection == "desc"
-                    ? query.OrderByDescending(u => u.Name)
-                    : query.OrderBy(u => u.Name),
-                "username" => request.SortDirection == "desc"
-                    ? query.OrderByDescending(u => u.UserName)
-                    : query.OrderBy(u => u.UserName),
-                "email" => request.SortDirection == "desc"
-                    ? query.OrderByDescending(u => u.Email)
-                    : query.OrderBy(u => u.Email),
-                "createdat" => request.SortDirection == "desc"
-                    ? query.OrderByDescending(u => u.CreatedAt)
-                    : query.OrderBy(u => u.CreatedAt),
-                _ => query.OrderByDescending(u => u.CreatedAt) // Mặc định sắp xếp theo ngày tạo mới nhất
+                "name" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
+                "username" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UserName) : query.OrderBy(u => u.UserName),
+                "email" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
+                "groupname" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Group.Name) : query.OrderBy(u => u.Group.Name),
+                "createdat" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+                _ => query.OrderByDescending(u => u.CreatedAt)
             };
 
             var totalRecords = await query.CountAsync();
 
-            // Pagination & Projection - Thực hiện tại server (DB)
-            // QUAN TRỌNG: Sử dụng Select() trực tiếp để chỉ lấy các trường cần thiết, tránh N+1 và load dữ liệu thừa (Image, text dài...)
+            // Projection: Chỉ lấy những gì cần thiết nhất để giảm tải (bỏ qua Image lớn)
             var items = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
@@ -226,23 +244,16 @@ namespace Common.Service
                     Address = u.Address,
                     Note = u.Note,
                     Gender = u.Gender,
-                    // Image = u.Image, // FIX: Don't load Image for list view to improve performance (20s -> <1s)
-                    Theme = u.Theme,
                     GroupId = u.GroupId,
-                    GroupName = u.Group.Name, // Join tự động qua Navigation Property
+                    GroupName = u.Group.Name, // EF Core tự động sinh INNER JOIN cực tối ưu
                     RowStatus = u.RowStatus,
                     CreatedAt = u.CreatedAt,
                     CreatedBy = u.CreatedBy,
-                    UpdatedBy = u.UpdatedBy,
-                    // Không cần map CreatedName/UpdatedName ở đây nếu không thực sự cần thiết cho List, 
-                    // hoặc nếu cần thì phải join thêm bảng UsUsers (self-join)
-                    
-                    // Nếu cần CreatedName/UpdatedName, ta có thể xử lý sau khi lấy về memory 
-                    // hoặc dùng sub-query (nhưng phức tạp hơn cho EF)
+                    UpdatedBy = u.UpdatedBy
                 })
                 .ToListAsync();
 
-            // Xử lý mapping tên người tạo/sửa (Optional - nếu cần thiết thì giữ logic cũ nhưng áp dụng lên items đã select)
+            // Xử lý mapping tên người tạo/sửa (Vẫn giữ logic tối ưu này)
             if (items.Any())
             {
                 var userIds = items.SelectMany(u => new[] { u.CreatedBy, u.UpdatedBy })

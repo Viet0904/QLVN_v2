@@ -381,5 +381,53 @@ public class UserApiClient
         }
     }
 
+    public async Task<List<UsGroupViewModel>> SearchGroupsAsync(string term)
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<List<UsGroupViewModel>>($"api/Group/search?term={Uri.EscapeDataString(term ?? string.Empty)}");
+            return response ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching groups");
+            return new();
+        }
+    }
+
+    public async Task<List<UsGroupViewModel>> GetSimpleGroupsAsync(int skip, int take, string? term = null)
+    {
+        try
+        {
+            var url = $"api/Group/simple?skip={skip}&take={take}";
+            if (!string.IsNullOrEmpty(term)) url += $"&term={Uri.EscapeDataString(term)}";
+            
+            var response = await _httpClient.GetFromJsonAsync<List<UsGroupViewModel>>(url);
+            return response ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching simple groups");
+            return new();
+        }
+    }
+
+    public async Task<int> GetGroupsCountAsync(string? term = null)
+    {
+        try
+        {
+            var url = "api/Group/count";
+            if (!string.IsNullOrEmpty(term)) url += $"?term={Uri.EscapeDataString(term)}";
+            
+            var response = await _httpClient.GetFromJsonAsync<int>(url);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching groups count");
+            return 0;
+        }
+    }
+
     #endregion
 }

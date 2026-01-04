@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Blazored.Typeahead;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Http;
 using WebBlazor.Handlers;
 using WebBlazor.Services;
 using DataTables.Blazor.Extensions;
+using MudBlazor.Services;
 using System;
 
 namespace WebBlazor
@@ -49,9 +51,11 @@ namespace WebBlazor
         builder.Services.AddScoped<MenuService>();
 
         // Thêm Service 
-        builder.Services.AddDataTables();
+    builder.Services.AddDataTables();
+    builder.Services.AddMudServices();
+    
 
-        await builder.Build().RunAsync();
+    await builder.Build().RunAsync();
                 }
             }
 }

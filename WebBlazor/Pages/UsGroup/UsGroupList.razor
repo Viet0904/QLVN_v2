@@ -165,6 +165,9 @@
                 await JS.InvokeVoidAsync("registerBlazorInstance", objRef);
                 
                 var config = new {
+                    dom = "rt", // Chỉ hiện Table và Processing, gỡ bỏ mặc định
+                    paging = false, 
+                    info = false,
                     columnNames = TableColumns.Select(c => c.DisplayName).Concat(new[] { "Thao tác" }).ToArray(),
                     columns = TableColumns.Select(c => c.Property).ToArray(),
                     idField = "Id",

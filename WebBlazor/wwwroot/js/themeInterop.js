@@ -368,5 +368,52 @@
         if (!applied) {
             // console.warn(`Theme value "${themeValue}" not found for selector "${selector}"`);
         }
+    },
+
+    // Khởi tạo lại toàn bộ layout khi chuyển trang (Fix lỗi vỡ giao diện)
+    initializeLayout: function () {
+        if (typeof $ === 'undefined') return;
+        try {
+            if (typeof $.fn.pcodedmenu === 'function') {
+                $("#pcoded").pcodedmenu({
+                    verticalMenuplacement: 'left',
+                    itemClick: true,
+                    itemPrefixStyle: 'l2',
+                    TextBoxSearch: true,
+                    activeMenuitemPic: true,
+                    FixedHeaderPosition: true,
+                    FixedNavbarPosition: true,
+                    VerticalSubMenuItemIconStyle: 'style1',
+                    VerticalNavigationView: 'view1',
+                    verticalSubItemClick: true,
+                    TitleAttributes: "{ '" + "Title" + "': '" + "value" + "' }",
+                    SubMenuAttributes: "{ '" + "SubMenu" + "': '" + "value" + "' }"
+                });
+            }
+            if (typeof window.InitPcoded === 'function') window.InitPcoded();
+            this.updateHeaderMargin();
+            $('.mobile-menu').off('click').on('click', function() {
+                $('#mobile-collapse').trigger('click');
+            });
+        } catch (e) {
+            console.error('Error in initializeLayout:', e);
+        }
+
+        // Đảm bảo click sự kiện được bind lại cho nút thu nhỏ sidebar
+        setTimeout(function() {
+            try {
+                $('#mobile-collapse').off('click').on('click', function(e) {
+                    $('#pcoded').toggleClass('pcoded-m-side');
+                    e.stopPropagation();
+                });
+                
+                // Bind lại cho nút Setting Theme (bánh răng)
+                $('.theme-loader').fadeOut('slow', function() {
+                    $(this).remove();
+                });
+                
+                if (typeof window.InitThemeSettings === 'function') window.InitThemeSettings();
+            } catch (err) {}
+        }, 500);
     }
 };

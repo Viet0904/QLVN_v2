@@ -1,6 +1,9 @@
 ﻿@using Common.Model.UsUser
 @using Common.Model.UsGroup
 @using Common.Model.Common
+@using Blazored.Typeahead
+@using WebBlazor.Services
+@inject UserApiClient UserApiClient
 @inject Microsoft.JSInterop.IJSRuntime JS
 
 <!-- Add/Edit User Modal -->
@@ -108,16 +111,34 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Nhóm <span class="text-danger">*</span></label>
-                                        <InputSelect @bind-Value="UserModel.GroupId" class="form-control">
-                                            <option value="">-- Chọn nhóm --</option>
-                                            @if (Groups != null)
-                                            {
-                                                @foreach (var group in Groups)
-                                                {
-                                                    <option value="@group.Id">@group.Name (@group.Id)</option>
-                                                }
-                                            }
-                                        </InputSelect>
+                                        <div class="custom-select-container">
+                                            <MudMenu Label="@(_selectedGroup?.Name ?? "Chọn nhóm...")" 
+                                                    Variant="MudBlazor.Variant.Outlined" 
+                                                    EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                                                    Style="width: 100%;" 
+                                                    FullWidth="true" 
+                                                    Dense="true"
+                                                    AnchorOrigin="Origin.BottomCenter"
+                                                    TransformOrigin="Origin.TopCenter"
+                                                    PopoverClass="group-select-popover">
+                                                <div class="pa-2" style="position: sticky; top: 0; background: white; z-index: 10;">
+                                                    <MudTextField T="string" @bind-Value="_groupSearchText" 
+                                                                  Placeholder="Tìm nhanh..." 
+                                                                  Immediate="true" 
+                                                                  OnKeyUp="@OnGroupSearchKeyUp" 
+                                                                  Adornment="Adornment.Start" 
+                                                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                                                  Margin="MudBlazor.Margin.Dense" />
+                                                </div>
+                                                <div style="height: 300px; overflow-y: auto;">
+                                                    <Virtualize @ref="_virtualizeComponent" ItemsProvider="LoadGroupsVirtualized" Context="group">
+                                                        <MudMenuItem OnClick="@(() => OnGroupSelected(group))">
+                                                            @group.Name (@group.Id)
+                                                        </MudMenuItem>
+                                                    </Virtualize>
+                                                </div>
+                                            </MudMenu>
+                                        </div>
                                         <ValidationMessage For="@(() => UserModel.GroupId)" class="text-danger" />
                                     </div>
                                 </div>
@@ -252,6 +273,51 @@
 
     [Parameter] public EventCallback OnSubmit { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+
+    private string? _groupSearchText;
+    private Virtualize<UsGroupViewModel>? _virtualizeComponent;
+    private UsGroupViewModel? _selectedGroup;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (UserModel != null && !string.IsNullOrEmpty(UserModel.GroupId))
+        {
+            // Chỉ fetch thông tin group khi ID thay đổi hoặc chưa có object
+            if (_selectedGroup == null || _selectedGroup.Id != UserModel.GroupId)
+            {
+                _selectedGroup = await UserApiClient.GetGroupByIdAsync(UserModel.GroupId);
+            }
+        }
+        else
+        {
+            _selectedGroup = null;
+        }
+    }
+
+    private async ValueTask<ItemsProviderResult<UsGroupViewModel>> LoadGroupsVirtualized(ItemsProviderRequest request)
+    {
+        var totalCount = await UserApiClient.GetGroupsCountAsync(_groupSearchText);
+        var items = await UserApiClient.GetSimpleGroupsAsync(request.StartIndex, request.Count, _groupSearchText);
+        
+        return new ItemsProviderResult<UsGroupViewModel>(items, totalCount);
+    }
+
+    private async Task OnGroupSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (_virtualizeComponent != null)
+        {
+            await _virtualizeComponent.RefreshDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void OnGroupSelected(UsGroupViewModel group)
+    {
+        _selectedGroup = group;
+        UserModel.GroupId = group.Id;
+    }
+
+
 
     // Local values để bind với input
     private string PasswordValue

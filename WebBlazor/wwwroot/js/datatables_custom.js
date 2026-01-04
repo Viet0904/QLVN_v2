@@ -61,7 +61,7 @@ window.initGenericDataTable = function (selector, config) {
             var wrapper = $(api.table().container());
             var totalColumns = api.columns().nodes().length;
 
-            createCustomToolbar(api, wrapper, columnNames, totalColumns, config.addBtnId);
+            createCustomToolbar(api, wrapper, columnNames, totalColumns, config);
 
             api.columns().every(function (index) {
                 var column = this;
@@ -292,9 +292,12 @@ window.registerBlazorInstance = function (instance) {
 // ==========================================
 
 // Tạo custom toolbar
-function createCustomToolbar(api, wrapper, columnNames, totalColumns, addBtnId) {
+function createCustomToolbar(api, wrapper, columnNames, totalColumns, config) {
+    var addBtnId = config.addBtnId;
     var addBtnHtml = addBtnId ? `
-        <button type="button" class="btn btn-success btn-sm dt-add-new-btn" id="${addBtnId}" style="
+        <button type="button" class="btn btn-success btn-sm dt-add-new-btn" id="${addBtnId}" 
+            data-event="${config.addEvent || 'OpenAddModal'}"
+            style="
             display: flex;
             align-items: center;
             gap: 8px;
@@ -494,14 +497,14 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns, addBtnId) 
     });
 
     // Cấu hình sự kiện click cho nút Thêm Mới - FIX: Use delegation because button is dynamic
-    $(document).off('click', '#btnAddNewUser').on('click', '#btnAddNewUser', function (e) {
+    $(document).off('click', '.dt-add-new-btn').on('click', '.dt-add-new-btn', function (e) {
         e.preventDefault();
         e.stopPropagation();
         if (window.blazorInstance) {
-            var eventName = config.addEvent || 'OpenAddModal';
+            var eventName = $(this).data('event') || 'OpenAddModal';
             window.blazorInstance.invokeMethodAsync(eventName)
-                .then(function () { console.log(); })
-                .catch(function (err) { console.error(); });
+                .then(function () { /* success */ })
+                .catch(function (err) { console.error('Error invoking Blazor method:', err); });
         }
     });
 }

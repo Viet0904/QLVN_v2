@@ -44,9 +44,11 @@ namespace Common.Service.Common
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address));
 
             cfg.CreateMap<UsUserCreateModel, UsUser>()
+                .ForMember(dest => dest.Cmnd, opt => opt.MapFrom(src => src.CMND))
                 .IgnoreAllNonExisting();
 
             cfg.CreateMap<UsUserUpdateModel, UsUser>()
+                .ForMember(dest => dest.Cmnd, opt => opt.MapFrom(src => src.CMND))
                 .IgnoreAllNonExisting();
 
             #endregion

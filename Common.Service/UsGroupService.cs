@@ -279,5 +279,58 @@ namespace Common.Service
                 }
             });
         }
+
+        public async Task<IEnumerable<UsGroupViewModel>> Search(string? term)
+        {
+            return await DbContext.UsGroups
+                .AsNoTracking()
+                .Where(g => g.RowStatus == RowStatusConstant.Active && (string.IsNullOrEmpty(term) || g.Name.Contains(term)))
+                .Take(50)
+                .Select(g => new UsGroupViewModel
+                {
+                    Id = g.Id,
+                    Name = g.Name
+                })
+                .ToListAsync();
+        }
+
+        // Hỗ trợ Virtual Scrolling: Chỉ lấy Id và Name, sử dụng Skip/Take
+        public async Task<IEnumerable<UsGroupViewModel>> GetSimplePaginated(int skip, int take, string? term = null)
+        {
+            var query = DbContext.UsGroups
+                .AsNoTracking()
+                .Where(g => g.RowStatus == RowStatusConstant.Active);
+
+            if (!string.IsNullOrEmpty(term))
+            {
+                query = query.Where(g => g.Name.Contains(term));
+            }
+
+            return await query
+                .OrderBy(g => g.Name)
+                .Skip(skip)
+                .Take(take)
+                .Select(g => new UsGroupViewModel
+                {
+                    Id = g.Id,
+                    Name = g.Name
+                })
+                .ToListAsync();
+        }
+
+        public async Task<int> GetActiveCount(string? term = null)
+        {
+            var query = DbContext.UsGroups
+                .AsNoTracking()
+                .Where(g => g.RowStatus == RowStatusConstant.Active);
+
+            if (!string.IsNullOrEmpty(term))
+            {
+                query = query.Where(g => g.Name.Contains(term));
+            }
+
+            return await query.CountAsync();
+        }
+
     }
 }

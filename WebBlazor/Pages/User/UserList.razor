@@ -189,14 +189,16 @@
             layoutInitialized = true;
             await InitDataTable();
             
-            // Chỉ nạp lại layout scripts nếu thực sự cần thiết khi init xong
+            // Khởi tạo layout adminty giống như trang Home và UsGroupList
             try {
+                // Reload layout scripts để đảm bảo NavMenu và SettingTheme hoạt động
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
                 await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+                
                 await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
             } catch (Exception ex) {
-                Console.WriteLine($"Error loading layout scripts: {ex.Message}");
+                Console.WriteLine($"Error initializing layout: {ex.Message}");
             }
         }
     }
@@ -270,8 +272,10 @@
     [JSInvokable("SearchUsers")]
     public async Task SearchUsers(string term)
     {
+        // Khi search, reset về trang 1
         paginationRequest.SearchTerm = term;
         paginationRequest.PageNumber = 1;
+        // Search trên backend hiện đã hỗ trợ search cả GroupName
         await RefreshData();
     }
 
@@ -296,9 +300,8 @@
 
     private async Task LoadGroups()
     {
-        // FIX: Cache groups to prevent unnecessary API calls and delay on every modal open
-        if (allGroups != null && allGroups.Any()) return;
-        allGroups = await UserService.GetAllGroupsAsync();
+        // Không cần load trước 50k nhóm nữa, MudAutocomplete sẽ tự search server-side
+        await Task.CompletedTask;
     }
 
     #region Modal Operations
@@ -461,10 +464,11 @@
 
                     await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
 
-                if (dataTableInitialized)
-                {
-                    await RefreshDataTable();
-                }
+                    if (dataTableInitialized)
+                    {
+                        await RefreshDataTable();
+                        await JS.InvokeVoidAsync("addUserRowSmooth", $"#{tableId}", newUser.Id);
+                    }
                     
                     StateHasChanged();
                 }
@@ -522,10 +526,11 @@
 
                     await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
 
-                if (dataTableInitialized)
-                {
-                    await RefreshDataTable();
-                }
+                    if (dataTableInitialized)
+                    {
+                        await RefreshDataTable();
+                        await JS.InvokeVoidAsync("updateUserRowSmooth", $"#{tableId}", updatedUserId);
+                    }
                     
                     StateHasChanged();
                 }

@@ -193,4 +193,47 @@ public class GroupController : ControllerBase
             return StatusCode(500, new { Message = MessageConstant.NOT_EXIST, error = ex.Message });
         }
     }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> Search([FromQuery] string? term)
+    {
+        try
+        {
+            var groups = await _groupService.Search(term);
+            return Ok(groups);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching groups");
+            return StatusCode(500, new { message = "Lỗi khi tìm kiếm nhóm", error = ex.Message });
+        }
+    }
+
+    [HttpGet("simple")]
+    public async Task<IActionResult> GetSimple([FromQuery] int skip = 0, [FromQuery] int take = 20, [FromQuery] string? term = null)
+    {
+        try
+        {
+            var groups = await _groupService.GetSimplePaginated(skip, take, term);
+            return Ok(groups);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi khi lấy danh sách nhóm", error = ex.Message });
+        }
+    }
+
+    [HttpGet("count")]
+    public async Task<IActionResult> GetCount([FromQuery] string? term = null)
+    {
+        try
+        {
+            var count = await _groupService.GetActiveCount(term);
+            return Ok(count);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi khi lấy số lượng nhóm", error = ex.Message });
+        }
+    }
 }
