@@ -115,7 +115,23 @@ namespace Common.Service
                 var result = await DbContext.UsUsers.Where(x => x.Id == model.Id).FirstOrDefaultAsync();
                 if (result != null)
                 {
-                    Mapper.Map(model, result);
+                    // FIX: Manual mapping to avoid AutoMapper resetting CreatedAt/CreatedBy to null/default
+                    result.Name = model.Name;
+                    result.UserName = model.UserName;
+                    result.GroupId = model.GroupId;
+                    result.Email = model.Email;
+                    result.Phone = model.Phone;
+                    result.Gender = model.Gender;
+                    result.Cmnd = model.CMND;
+                    result.Address = model.Address;
+                    result.Note = model.Note;
+                    result.RowStatus = model.RowStatus;
+                    
+                    // Only update Image if it's provided (not null)
+                    if (model.Image != null) 
+                    {
+                        result.Image = model.Image;
+                    }
 
                     if (model.IsChangePassword == true && !string.IsNullOrEmpty(model.Password)) 
                     {
@@ -124,6 +140,7 @@ namespace Common.Service
 
                     result.UpdatedAt = DateTime.Now;
                     result.UpdatedBy = GetCurrentUserId();
+                    
                     await DbContext.SaveChangesAsync();
                     return await GetById(model.Id);
                 }
@@ -209,7 +226,7 @@ namespace Common.Service
                     Address = u.Address,
                     Note = u.Note,
                     Gender = u.Gender,
-                    Image = u.Image,
+                    // Image = u.Image, // FIX: Don't load Image for list view to improve performance (20s -> <1s)
                     Theme = u.Theme,
                     GroupId = u.GroupId,
                     GroupName = u.Group.Name, // Join tự động qua Navigation Property

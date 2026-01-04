@@ -493,8 +493,8 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns, addBtnId) 
         }, 500);
     });
 
-    // Cấu hình sự kiện click cho nút Thêm Mới
-    wrapper.find('#btnAddNewUser').on('click', function (e) {
+    // Cấu hình sự kiện click cho nút Thêm Mới - FIX: Use delegation because button is dynamic
+    $(document).off('click', '#btnAddNewUser').on('click', '#btnAddNewUser', function (e) {
         e.preventDefault();
         e.stopPropagation();
         if (window.blazorInstance) {

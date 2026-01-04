@@ -23,13 +23,17 @@ namespace Common.Service
         // Lấy tất cả nhóm người dùng Active
         public async Task<IEnumerable<UsGroupViewModel>> GetAll()
         {
-            return await Task.Run(() =>
-            {
-                var groups = DbContext.UsGroups
-                    .Where(g => g.RowStatus == RowStatusConstant.Active)
-                    .ToList();
-                return Mapper.Map<IEnumerable<UsGroupViewModel>>(groups);
-            });
+            // Optimization: Direct projection for Dropdown/ComboBox
+            // Reduces memory usage and avoids fetching large text fields
+            return await DbContext.UsGroups
+                .AsNoTracking()
+                .Where(g => g.RowStatus == RowStatusConstant.Active)
+                .Select(g => new UsGroupViewModel 
+                { 
+                    Id = g.Id, 
+                    Name = g.Name 
+                })
+                .ToListAsync();
         }
         // lấy ra tất cả nhóm người dùng cả Active và Deleted
         public async Task<IEnumerable<UsGroupViewModel>> GetFull(){

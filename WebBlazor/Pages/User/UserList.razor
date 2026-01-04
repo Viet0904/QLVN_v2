@@ -296,6 +296,8 @@
 
     private async Task LoadGroups()
     {
+        // FIX: Cache groups to prevent unnecessary API calls and delay on every modal open
+        if (allGroups != null && allGroups.Any()) return;
         allGroups = await UserService.GetAllGroupsAsync();
     }
 
