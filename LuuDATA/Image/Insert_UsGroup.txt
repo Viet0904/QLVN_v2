@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant U as Người dùng
+    participant B as WebBlazor (UI)
+    participant A as GroupController
+    participant S as UsGroupService
+    participant DB as SQL Server
+
+    Note over U, DB: Quy trình Tạo Nhóm Mới
+    U->>B: Nhập thông tin Nhóm & Lưu
+    B->>A: POST api/Group (Kèm JWT)
+    A->>S: Create(UsGroupCreateModel)
+    S->>DB: Kiểm tra tên nhóm (RowStatus = 1)
+    DB-->>S: Không trùng
+    S->>S: GenerateId("GR", 3)
+    S->>DB: INSERT UsGroup (Transaction)
+    DB-->>S: Success
+    S-->>A: UsGroupViewModel
+    A-->>B: 200 OK
+    
+    Note over U, DB: Quy trình Cập Nhật Quyền Hạn
+    U->>B: Chỉnh sửa ma trận quyền & Lưu
+    B->>A: POST api/Group/permissions
+    A->>S: UpdatePermissions(List<ViewModel>)
+    S->>DB: Begin Transaction
+    loop Cho mỗi Menu/User
+        S->>DB: UPDATE UsUserPermission (Xem, Them, Sua, Xoa...)
+    end
+    S->>DB: Commit Transaction
+    DB-->>S: Success
+    S-->>A: true
+    A-->>B: 200 OK
+    B-->>U: Hiển thị thông báo thành công

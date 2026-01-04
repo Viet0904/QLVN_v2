@@ -39,9 +39,9 @@ namespace Common.Service.Common
             
             cfg.CreateMap<UsUser, UsUserViewModel>()
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.CreatedAt)))
-                .ForMember(dest => dest.CreatedName, opt => opt.MapFrom(src => FormatUser(src.CreatedBy ?? string.Empty, context)))
                 .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.UpdatedAt)))
-                .ForMember(dest => dest.UpdatedName, opt => opt.MapFrom(src => FormatUser(src.UpdatedBy ?? string.Empty, context)));
+                .ForMember(dest => dest.CMND, opt => opt.MapFrom(src => src.Cmnd))
+                .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address));
 
             cfg.CreateMap<UsUserCreateModel, UsUser>()
                 .IgnoreAllNonExisting();

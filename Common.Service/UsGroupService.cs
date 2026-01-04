@@ -139,7 +139,7 @@ namespace Common.Service
                 throw;
             }
          }
-
+        // Lấy danh sách nhóm người dùng theo phân trang
         public async Task<PaginatedResponse<UsGroupViewModel>> GetPaginated(PaginatedRequest request)
         {
             var query = DbContext.UsGroups.AsQueryable();
@@ -182,7 +182,7 @@ namespace Common.Service
                 PageSize = request.PageSize
             };
         }
-
+        // Lấy danh sách người dùng theo nhóm người dùng
         public async Task<IEnumerable<UsUserViewModel>> GetUsersByGroupId(string groupId)
         {
             var users = await DbContext.UsUsers
@@ -190,7 +190,7 @@ namespace Common.Service
                 .ToListAsync();
             return Mapper.Map<List<UsUserViewModel>>(users);
         }
-
+        // Lấy danh sách quyền của người dùng theo nhóm người dùng
         public async Task<IEnumerable<UsUserPermissionViewModel>> GetPermissionMatrix(string groupId)
         {
             var users = await DbContext.UsUsers
@@ -234,7 +234,7 @@ namespace Common.Service
 
             return result;
         }
-
+        // Cập nhật quyền của người dùng
         public async Task<bool> UpdatePermissions(IEnumerable<UsUserPermissionViewModel> models)
         {
             var strategy = DbContext.Database.CreateExecutionStrategy();

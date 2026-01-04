@@ -1081,3 +1081,14 @@ table.dataTable tbody td.dataTables_empty {
     font-size: 15px;
     background: #fafafa;
 }
+
+/* ========================================
+   NAVMENU HEIGHT FIX
+   ======================================== */
+.pcoded-navbar {
+    min-height: 100vh !important;
+}
+
+.pcoded-inner-navbar {
+    padding-bottom: 80px !important;
+}

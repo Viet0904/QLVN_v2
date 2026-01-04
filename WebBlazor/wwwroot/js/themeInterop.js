@@ -1,5 +1,5 @@
 ﻿window.themeInterop = {
-    // compute header height (kept for diagnostics, not applied as inline margin)
+    // Lấy chiều cao của header để tính toán margin-top
     _getHeaderHeightPx: function (header) {
         if (!header) return 0;
         let h = header.getBoundingClientRect().height || header.offsetHeight || 0;
@@ -12,21 +12,20 @@
         return Math.ceil(h);
     },
 
-    // STOP setting an inline margin with !important.
-    // Instead remove any inline margin so CSS controls layout.
+    // Loại bỏ margin-top inline để CSS controls layout.
     _removeMainContainerInlineMargin: function () {
         const mainContainer = document.querySelector('.pcoded-main-container');
         if (!mainContainer) return;
         try {
-            // remove inline margin-top so stylesheet or other layout rules take effect
+            // Loại bỏ margin-top inline
             mainContainer.style.removeProperty('margin-top');
         } catch (e) {
-            // fallback: blank it
+            
             mainContainer.style.marginTop = '';
         }
     },
 
-    // Recalculate header height for diagnostics but DO NOT set inline margin
+    // Cập nhật margin-top cho main-container
     updateHeaderMargin: function () {
         const header = document.querySelector('.pcoded-header');
         const pcoded = document.getElementById('pcoded');
@@ -36,16 +35,14 @@
 
         const isFixedHeader = pcoded.classList.contains('pcoded-fixed-header');
 
-        // We compute height for logging/diagnostics but we do NOT apply it as inline !important margin.
+        // Tính toán chiều cao của header
         const headerHeight = this._getHeaderHeightPx(header);
-        // If you want to log:
-        // console.log('Computed headerHeight (not applied):', headerHeight);
 
-        // Always remove any inline margin so CSS rules are authoritative
+        // Loại bỏ margin-top inline
         this._removeMainContainerInlineMargin();
     },
 
-    // stop observing and retrying margin writes from scripts — keep a simple observer that only ensures inline styles are removed
+    // Đảm bảo observer được khởi tạo
     _ensureMarginObserver: function () {
         if (this._observerInitialized) return;
         this._observerInitialized = true;
@@ -54,10 +51,11 @@
             const mainContainer = document.querySelector('.pcoded-main-container');
             if (!mainContainer || !window.MutationObserver) return;
 
+            // Tạo observer để theo dõi thay đổi style của main-container
             const observer = new MutationObserver((mutations) => {
                 for (const m of mutations) {
                     if (m.type === 'attributes' && m.attributeName === 'style') {
-                        // small delay to allow other script writes, then remove inline margin
+                        // Đợi 40ms để cho các script khác viết style vào main-container
                         setTimeout(() => {
                             this._removeMainContainerInlineMargin();
                         }, 40);
@@ -65,13 +63,14 @@
                     }
                 }
             });
-
+            // Theo dõi thay đổi style của main-container
             observer.observe(mainContainer, { attributes: true, attributeFilter: ['style'] });
         } catch (e) {
             // ignore
         }
     },
 
+    // Khởi tạo lại tabs
     reinitializeTabs: function () {
         if (typeof $ !== 'undefined' && $.fn.tab) {
             $('.nav-tabs a[data-toggle="tab"]').off('click').on('click', function (e) {
@@ -83,6 +82,7 @@
         }
     },
 
+    // Đặt sidebar cố định
     setSidebarFixed: function (isFixed) {
         const navbar = document.querySelector('.pcoded-navbar');
         const inner = document.querySelector('.pcoded-inner-navbar');
@@ -105,6 +105,7 @@
         }
     },
 
+    // Đặt header cố định
     setHeaderFixed: function (isFixed) {
         const header = document.querySelector('.pcoded-header');
         const navbar = document.querySelector('.pcoded-navbar');
@@ -124,7 +125,7 @@
             header.style.position = ''; // Clear inline position
 
 
-            // When header = relative and sidebar = fixed, keep navbar absolute if needed
+            // Khi header = relative và sidebar = fixed, giữ navbar absolute nếu cần thiết
             try {
                 if (navbar) {
                     const navbarPosition = navbar.getAttribute('pcoded-navbar-position');
@@ -135,13 +136,14 @@
             } catch (e) { /* ignore */ }
         }
 
-        // Always remove any existing inline margin — let CSS rules in app.css take control
+        // Loại bỏ margin-top inline
         this._removeMainContainerInlineMargin();
         
-        // Ensure observer is active to fight off other scripts trying to re-add margins
+        // Đảm bảo observer hoạt động để chống lại các script khác cố gắng thêm margin
         this._ensureMarginObserver();
     },
 
+    // Đặt loại menu
     setMenuType: function (type) {
         const pcoded = document.getElementById('pcoded');
         if (!pcoded) return;
@@ -149,6 +151,7 @@
         pcoded.offsetHeight;
     },
 
+    // Lấy thông tin về chủ đề hiện tại
     getCurrentTheme: function () {
         const pcoded = document.getElementById('pcoded');
         const sidebarEffect = document.getElementById('vertical-menu-effect')?.value || 'shrink';
@@ -168,13 +171,13 @@
         const menuCaptionColor = navLabel?.getAttribute('menu-title-theme') || 'theme5';
         const menuType = pcoded?.getAttribute('nav-type') || 'st6';
 
-        console.log('getCurrentTheme - Reading from DOM attributes:', {
-            mainLayout,
-            headerBrandColor,
-            headerColor,
-            activeLinkColor,
-            menuCaptionColor
-        });
+        // console.log('getCurrentTheme - Reading from DOM attributes:', {
+        //     mainLayout,
+        //     headerBrandColor,
+        //     headerColor,
+        //     activeLinkColor,
+        //     menuCaptionColor
+        // });
 
         return {
             isFixedSidebar: true,
@@ -192,14 +195,15 @@
         };
     },
 
+    // Áp dụng các thuộc tính chủ đề
     applyThemeAttributes: function (settings) {
-        console.log('Applying theme attributes:', settings);
+        // console.log('Applying theme attributes:', settings);
         if (typeof $ === 'undefined') {
-            console.warn('jQuery not ready, retrying...');
+            // console.warn('jQuery not ready, retrying...');
             setTimeout(() => this.applyThemeAttributes(settings), 300);
             return;
         }
-
+        // Áp dụng các thuộc tính chủ đề
         try {
             const $navbar = $('.pcoded-navbar');
             const $logo = $('.navbar-logo');
@@ -254,7 +258,7 @@
             $logo[0].offsetHeight;
             $header[0].offsetHeight;
 
-            // Ensure we don't leave an inline margin behind
+            // Đảm bảo không để lại margin inline
             setTimeout(() => {
                 this._removeMainContainerInlineMargin();
             }, 60);
@@ -264,6 +268,7 @@
         }
     },
 
+    // Đánh dấu các nút màu hoạt động
     highlightActiveColorButtons: function (settings) {
         try {
             const $mainLayout = $(`.navbar-theme[navbar-theme="${settings.mainLayout}"]`);
@@ -281,6 +286,7 @@
         } catch (e) { /* ignore */ }
     },
 
+    // Áp dụng toàn bộ chủ đề
     applyFullTheme: function (settings) {
         this.setSidebarFixed(settings.isFixedSidebar);
         this.setHeaderFixed(settings.isFixedHeader);
@@ -324,9 +330,10 @@
         }, 200);
     },
 
+    // Áp dụng các thuộc tính chủ đề
     applyThemeClass: function (selector, attributeName, themeValue) {
         if (typeof $ === 'undefined') {
-            console.error('jQuery not available for applyThemeClass');
+            // console.error('jQuery not available for applyThemeClass');
             return;
         }
 
@@ -355,11 +362,11 @@
                 $('.pcoded-navigatio-lavel').attr('menu-title-theme', themeValue);
             }
         } catch (e) {
-            console.error('Error applying theme class:', e);
+            // console.error('Error applying theme class:', e);
         }
 
         if (!applied) {
-            console.warn(`Theme value "${themeValue}" not found for selector "${selector}"`);
+            // console.warn(`Theme value "${themeValue}" not found for selector "${selector}"`);
         }
     }
 };

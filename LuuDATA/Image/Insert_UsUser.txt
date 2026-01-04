@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant User as Người dùng
+    participant Blazor as WebBlazor (UI)
+    participant API as Web API Controller
+    participant Service as UsUserService
+    participant DB as SQL Server
+
+    User->>Blazor: Nhập thông tin & Lưu
+    Blazor->>API: POST /api/User (với JWT Token)
+    API->>Service: Create(model)
+    Service->>DB: Kiểm tra trùng UserName
+    DB-->>Service: OK
+    Service->>Service: Sinh ID & Encrypt Password
+    Service->>DB: Insert UsUser Table
+    DB-->>Service: Success
+    Service-->>API: Trả về UsUserViewModel
+    API-->>Blazor: 201 Created
+    Blazor-->>User: Hiển thị thông báo & Refresh Table

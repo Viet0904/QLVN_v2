@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant U as Người dùng
+    participant B as WebBlazor (UI)
+    participant A as AuthController
+    participant S as UsUserService
+    participant H as PasswordHelper
+    participant DB as SQL Server
+
+    U->>B: Nhập Username/Password
+    B->>A: POST api/Auth/login
+    A->>S: LoginWithToken(request)
+    S->>H: CreatePassword(password)
+    H-->>S: Trả về chuỗi Hash
+    S->>DB: Query User (UserName & Password)
+    DB-->>S: Trả về UsUser Entity
+    S->>S: Khởi tạo JWT Token (Claims: Id, Name, GroupId)
+    S-->>A: Trả về LoginResponse (Token + UserInfo)
+    A-->>B: 200 OK (Data)
+    B->>B: Lưu Token vào LocalStorage
+    B-->>U: Chuyển hướng vào trang Home

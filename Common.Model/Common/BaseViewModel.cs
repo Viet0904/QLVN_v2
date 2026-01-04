@@ -10,12 +10,12 @@ namespace Common.Model.Common
     {
         public int RowStatus { get; set; }
         public System.DateTime CreatedAt { get; set; }
-        public string CreatedDate { get; set; } = null!;
-        public string CreatedBy { get; set; } = null!;
-        public string CreatedName { get; set; } = null!;
+        public string? CreatedDate { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? CreatedName { get; set; }
         public System.DateTime UpdatedAt { get; set; }
-        public string UpdatedDate { get; set; } = null!;
-        public string UpdatedBy { get; set; } = null!;
-        public string UpdatedName { get; set; } = null!;
+        public string? UpdatedDate { get; set; }
+        public string? UpdatedBy { get; set; }
+        public string? UpdatedName { get; set; }
     }
 }

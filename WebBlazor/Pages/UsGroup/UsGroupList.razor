@@ -167,16 +167,22 @@
                 var config = new {
                     columnNames = TableColumns.Select(c => c.DisplayName).Concat(new[] { "Thao tác" }).ToArray(),
                     columns = TableColumns.Select(c => c.Property).ToArray(),
-                    hiddenColumns = new string[] { }
+                    idField = "Id",
+                    actionRenderer = "getGroupActionButtons",
+                    addBtnId = "btnAddNewGroup"
                 };
 
-                await JS.InvokeVoidAsync("initGroupDataTable", $"#{tableId}", config);
+                await JS.InvokeVoidAsync("initGenericDataTable", $"#{tableId}", config);
                 dataTableInitialized = true;
-                await JS.InvokeVoidAsync("updateGroupDataTableData", $"#{tableId}", paginatedGroups);
-                
-                // Scripts reload
-                await JS.InvokeVoidAsync("eval", "if(typeof $.getScript === 'function') { $.getScript('js/pcoded.min.js'); $.getScript('js/vartical-layout.min.js'); $.getScript('js/script.js'); }");
+                await JS.InvokeVoidAsync("updateGenericDataTableData", $"#{tableId}", paginatedGroups);
+
+
+               
             }
+             // Reload layout scripts
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
+                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
             await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
         }
     }
@@ -213,7 +219,7 @@
         paginatedGroups = await GroupApi.GetPaginatedGroupsAsync(paginationRequest);
         if (dataTableInitialized)
         {
-            await JS.InvokeVoidAsync("updateGroupDataTableData", $"#{tableId}", paginatedGroups);
+            await JS.InvokeVoidAsync("updateGenericDataTableData", $"#{tableId}", paginatedGroups);
         }
         StateHasChanged();
     }
@@ -269,7 +275,7 @@
                 {
                     await Notification.ShowSuccessAsync("Cập nhật nhóm thành công");
                     await RefreshData();
-                    await JS.InvokeVoidAsync("updateGroupRowSmooth", $"#{tableId}", updated.Id);
+                    await JS.InvokeVoidAsync("updateDataTableRowSmooth", $"#{tableId}", updated.Id);
                 }
             }
             else
@@ -280,7 +286,7 @@
                 {
                     await Notification.ShowSuccessAsync("Thêm nhóm mới thành công");
                     await RefreshData();
-                    await JS.InvokeVoidAsync("addGroupRowSmooth", $"#{tableId}", created.Id);
+                    await JS.InvokeVoidAsync("addDataTableRowSmooth", $"#{tableId}", created.Id);
                 }
             }
             await CloseModals();
@@ -301,7 +307,7 @@
         isProcessing = true;
         try
         {
-            await JS.InvokeVoidAsync("deleteGroupRowSmooth", $"#{tableId}", deleteGroupId);
+            await JS.InvokeVoidAsync("deleteDataTableRowSmooth", $"#{tableId}", deleteGroupId);
             await Task.Delay(400);
             
             var result = await GroupApi.DeleteGroupAsync(deleteGroupId);
@@ -334,10 +340,14 @@
         isProcessing = false;
         StateHasChanged();
     }
-
+    // Giải phóng 
     public void Dispose()
     {
         objRef?.Dispose();
+        if (dataTableInitialized)
+        {
+            _ = JS.InvokeVoidAsync("destroyGenericDataTable", $"#{tableId}");
+        }
     }
 }
 

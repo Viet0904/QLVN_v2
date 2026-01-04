@@ -217,3 +217,15 @@
 .pcoded-navbar[navbar-theme="themelight1"] .pcoded-hasmenu .pcoded-submenu li > a:hover {
     background-color: rgba(0, 0, 0, 0.03);
 }
+
+.pcoded-navbar {
+    height: 100vh;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-menu {
+    flex: 1;
+    overflow-y: auto;
+}

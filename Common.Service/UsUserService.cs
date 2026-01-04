@@ -31,25 +31,25 @@ namespace Common.Service
         {
             _config = config;
         }
-
+        // Lấy tất cả người dùng đang hoạt động
         public async Task<IEnumerable<UsUserViewModel>> GetAll()
         {
             var result = await DbContext.UsUsers.Where(x => x.RowStatus == RowStatusConstant.Active).ToListAsync();
             return Mapper.Map<List<UsUserViewModel>>(result);
         }
-
+        // Lấy tất cả người dùng cả đang hoạt động và ngừng hoạt động
         public async Task<IEnumerable<UsUserViewModel>> GetFull()
         {
             var result = await DbContext.UsUsers.ToListAsync();
             return Mapper.Map<List<UsUserViewModel>>(result);
         }
-
+        // Lấy thông tin người dùng theo id
         public async Task<UsUserViewModel> GetById(string id)
         {
             var result = await DbContext.UsUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
             return Mapper.Map<UsUserViewModel>(result);
         }
-
+        // Login người dùng
         public async Task<UsUserViewModel> Login(string userName, string password)
         {
             password = PasswordHelper.CreatePassword(password);
@@ -59,7 +59,7 @@ namespace Common.Service
             
             throw new Exception(MessageConstant.NOT_CORRECT);
         }
-
+        // Tạo người dùng
         public async Task<UsUserViewModel> Create(UsUserCreateModel model)
         {
             var result = await DbContext.UsUsers.Where(x => x.UserName == model.UserName && x.RowStatus == RowStatusConstant.Active).FirstOrDefaultAsync();
@@ -67,8 +67,9 @@ namespace Common.Service
             {
                 throw new Exception(MessageConstant.EXIST);
             }
-
+            // CreateExecutionStrategy là tính năng của EF Core để retry khi có lỗi xảy ra (Connection Resiliency)
             var strategy = DbContext.Database.CreateExecutionStrategy();
+            // strategy.ExecuteAsync là phương thức để thực hiện transaction. nếu có lỗi (ví dụ: mất kết nối mạng) xảy ra thì sẽ retry lại
             return await strategy.ExecuteAsync(async () =>
             {
                 using (var transaction = await DbContext.Database.BeginTransactionAsync())
@@ -80,7 +81,7 @@ namespace Common.Service
                     generateId:
                         item.Id = item.GroupId + GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
 
-                        var resultIdExist = await DbContext.UsUsers.Where(x => x.Id == item.Id).FirstOrDefaultAsync();
+                        var resultIdExist = await DbContext.UsUsers.AsNoTracking().Where(x => x.Id == item.Id).FirstOrDefaultAsync();
                         if (resultIdExist != null)
                             goto generateId;
 
@@ -137,7 +138,7 @@ namespace Common.Service
                 throw;
             }
         }
-
+        // Delete người dùng chuyển trạng thái thành ngừng hoạt động (RowStatus = 2)
         public async Task<bool> Delete(string id)
         {
             var result = await DbContext.UsUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
@@ -152,12 +153,15 @@ namespace Common.Service
                 throw new Exception(MessageConstant.NOT_EXIST);
             }
         }
+        // Lấy danh sách người dùng theo phân trang
         public async Task<PaginatedResponse<UsUserViewModel>> GetPaginated(PaginatedRequest request)
         {
-            var allResult = await GetAll();
-            var query = allResult.AsQueryable();
+            // Sử dụng IQueryable để query trực tiếp tại DB, tránh load toàn bộ vào RAM
+            // Thêm AsNoTracking để tăng tốc độ read
+            var query = DbContext.UsUsers.AsNoTracking()
+                .Where(x => x.RowStatus == RowStatusConstant.Active);
 
-            // Search
+            // Search - Thực hiện tại server (DB)
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var searchLower = request.SearchTerm.ToLower();
@@ -169,7 +173,7 @@ namespace Common.Service
                 );
             }
 
-            // Sort
+            // Sort - Thực hiện tại server (DB)
             query = request.SortColumn?.ToLower() switch
             {
                 "name" => request.SortDirection == "desc"
@@ -184,16 +188,67 @@ namespace Common.Service
                 "createdat" => request.SortDirection == "desc"
                     ? query.OrderByDescending(u => u.CreatedAt)
                     : query.OrderBy(u => u.CreatedAt),
-                _ => query.OrderBy(u => u.Id)
+                _ => query.OrderByDescending(u => u.CreatedAt) // Mặc định sắp xếp theo ngày tạo mới nhất
             };
 
-            var totalRecords = query.Count();
+            var totalRecords = await query.CountAsync();
 
-            // Pagination
-            var items = query
+            // Pagination & Projection - Thực hiện tại server (DB)
+            // QUAN TRỌNG: Sử dụng Select() trực tiếp để chỉ lấy các trường cần thiết, tránh N+1 và load dữ liệu thừa (Image, text dài...)
+            var items = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .ToList();
+                .Select(u => new UsUserViewModel
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    UserName = u.UserName,
+                    Email = u.Email,
+                    Phone = u.Phone,
+                    CMND = u.Cmnd,
+                    Address = u.Address,
+                    Note = u.Note,
+                    Gender = u.Gender,
+                    Image = u.Image,
+                    Theme = u.Theme,
+                    GroupId = u.GroupId,
+                    GroupName = u.Group.Name, // Join tự động qua Navigation Property
+                    RowStatus = u.RowStatus,
+                    CreatedAt = u.CreatedAt,
+                    CreatedBy = u.CreatedBy,
+                    UpdatedBy = u.UpdatedBy,
+                    // Không cần map CreatedName/UpdatedName ở đây nếu không thực sự cần thiết cho List, 
+                    // hoặc nếu cần thì phải join thêm bảng UsUsers (self-join)
+                    
+                    // Nếu cần CreatedName/UpdatedName, ta có thể xử lý sau khi lấy về memory 
+                    // hoặc dùng sub-query (nhưng phức tạp hơn cho EF)
+                })
+                .ToListAsync();
+
+            // Xử lý mapping tên người tạo/sửa (Optional - nếu cần thiết thì giữ logic cũ nhưng áp dụng lên items đã select)
+            if (items.Any())
+            {
+                var userIds = items.SelectMany(u => new[] { u.CreatedBy, u.UpdatedBy })
+                                   .Where(id => !string.IsNullOrEmpty(id))
+                                   .Distinct()
+                                   .ToList();
+
+                if (userIds.Any())
+                {
+                    var userNames = await DbContext.UsUsers.AsNoTracking()
+                                           .Where(u => userIds.Contains(u.Id))
+                                           .Select(u => new { u.Id, u.Name })
+                                           .ToDictionaryAsync(u => u.Id, u => u.Name);
+
+                    foreach (var item in items)
+                    {
+                        if (!string.IsNullOrEmpty(item.CreatedBy) && userNames.TryGetValue(item.CreatedBy, out var cName))
+                            item.CreatedName = cName;
+                        if (!string.IsNullOrEmpty(item.UpdatedBy) && userNames.TryGetValue(item.UpdatedBy, out var uName))
+                            item.UpdatedName = uName;
+                    }
+                }
+            }
 
             return new PaginatedResponse<UsUserViewModel>
             {
@@ -203,7 +258,7 @@ namespace Common.Service
                 PageSize = request.PageSize
             };
         }
-
+        // Login người dùng và tạo token
         public async Task<LoginResponse> LoginWithToken(LoginRequest request)
         {
             var user = await Login(request.UserName, request.Password);
@@ -221,14 +276,18 @@ namespace Common.Service
                     new Claim("FullName", user.Name ?? string.Empty),
                     new Claim("GroupId", user.GroupId ?? string.Empty)
                 }),
+                // Token hết hạn trong 1 giờ
                 Expires = DateTime.UtcNow.AddHours(1),
+                // Tạo token issuer
                 Issuer = _config["JwtSettings:Issuer"],
+                // Tạo người nhận token
                 Audience = _config["JwtSettings:Audience"],
+                // Tạo signature
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature)
             };
-
+            // Tạo token
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 

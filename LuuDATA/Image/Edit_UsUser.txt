@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant U as Người dùng
+    participant B as WebBlazor (UI)
+    participant A as UserController
+    participant S as UsUserService
+    participant H as PasswordHelper
+    participant DB as SQL Server
+
+    U->>B: Thay đổi thông tin & tick 'Đổi mật khẩu'
+    B->>A: PUT api/User/{id} (UsUserUpdateModel)
+    A->>S: Update(model)
+    S->>DB: SELECT UsUser WHERE Id = model.Id
+    DB-->>S: Entity
+    alt model.IsChangePassword == true
+        S->>H: CreatePassword(new_password)
+        H-->>S: Hash string
+        S->>S: Gán Password mới vào Entity
+    end
+    S->>S: Mapping thông tin khác (Name, Email, GroupId...)
+    S->>DB: SaveChangesAsync()
+    DB-->>S: Success
+    S-->>A: UsUserViewModel (Updated)
+    A-->>B: 200 OK
+    B-->>U: Cập nhật dòng dữ liệu trên UI

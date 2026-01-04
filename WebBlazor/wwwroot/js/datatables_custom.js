@@ -1,192 +1,310 @@
 ﻿window.dataTableInstances = {};
 window.dataTableConfigs = {};
-window.selectedUserRows = {};
+window.selectedRows = {};
 window.blazorInstance = null;
 
-// Register Blazor instance
+// Khởi tạo DataTable chung cho tất cả các trang
+window.initGenericDataTable = function (selector, config) {
+    // console.log('🚀 Initializing GenericDataTable:', selector, config);
+    if ($.fn.DataTable.isDataTable(selector)) {
+        $(selector).DataTable().destroy();
+    }
+
+    config = config || {};
+    var columnNames = config.columnNames || [];
+    var scrollY = config.scrollY || 'calc(100vh - 320px)';
+    
+    // Xóa các dropdown cũ liên quan đến selector này
+    $('.dt-column-dropdown[data-table="' + selector + '"]').remove();
+
+    const tableOptions = {
+        responsive: false,
+        searching: config.searching !== undefined ? config.searching : true,
+        ordering: true,
+        info: config.info !== undefined ? config.info : true, // Bật info để hiện số bản ghi khi dùng server-side
+        paging: config.paging !== undefined ? config.paging : true, // Bật paging mặc định của DataTables
+        lengthChange: false,
+        scrollY: scrollY,
+        scrollX: true,
+        scrollCollapse: true,
+        autoWidth: false,
+        deferRender: true, // Chỉ render những hàng thực sự hiển thị
+        serverSide: config.serverSide || false,
+        processing: config.serverSide || false,
+        order: config.defaultOrder || [[0, "asc"]],
+        // Tối ưu hóa render
+        pageLength: config.pageLength || 10,
+        pageLength: config.pageLength || 10,
+        dom: config.dom || 'rtip', // Rút gọn DOM để render nhanh hơn nếu cần
+        layout: { topStart: null, topEnd: null, bottomStart: null, bottomEnd: null },
+        language: {
+            zeroRecords: "Không tìm thấy dữ liệu phù hợp",
+            emptyTable: "Không có dữ liệu",
+            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+            info: "Hiển thị từ _START_ đến _END_ trong _TOTAL_ bản ghi",
+            infoEmpty: "Hiển thị 0 đến 0 trong 0 bản ghi",
+            infoFiltered: "(lọc từ _MAX_ bản ghi)",
+            paginate: { first: '«', last: '»', next: '›', previous: '‹' }
+        },
+        columnDefs: config.columnDefs || [
+            { orderable: false, targets: -1 }
+        ],
+        drawCallback: function (settings) {
+            setTimeout(function () {
+                if (config.bindEvents) {
+                    window[config.bindEvents](selector);
+                }
+            }, 50);
+        },
+        initComplete: function () {
+            var api = this.api();
+            var wrapper = $(api.table().container());
+            var totalColumns = api.columns().nodes().length;
+
+            createCustomToolbar(api, wrapper, columnNames, totalColumns, config.addBtnId);
+
+            api.columns().every(function (index) {
+                var column = this;
+                var header = $(column.header());
+                if (index === totalColumns - 1) return;
+                createColumnMenu(column, header, index, api, selector);
+            });
+
+            setTimeout(function () { api.columns.adjust(); }, 150);
+        }
+    };
+
+    // Nếu cấu hình serverSide, xử lý ajax callback qua Blazor
+    if (config.serverSide) {
+        tableOptions.ajax = function (data, callback, settings) {
+            if (window.blazorInstance) {
+                // console.log('📡 DataTables requesting server-side data:', data);
+                window.blazorInstance.invokeMethodAsync('LoadServerSideData', data)
+                    .then(result => {
+                        // console.log('✅ Server-side data received:', result);
+                        // DataTables expect: { draw, recordsTotal, recordsFiltered, data }
+                        // My C# PaginatedResponse provides: RecordsTotal, RecordsFiltered, Data (via Items)
+                        
+                        // Chuyển đổi format dữ liệu nếu cần
+                        var mappedData = [];
+                        if (result && result.data) {
+                            var columns = config.columns || [];
+                            result.data.forEach(function (item) {
+                                var rowData = [];
+                                columns.forEach(function(col) {
+                                    var val = item[col];
+                                    if (val === undefined) {
+                                        var lower = col.charAt(0).toLowerCase() + col.slice(1);
+                                        val = item[lower];
+                                    }
+                                    if (val === undefined) {
+                                        var upper = col.charAt(0).toUpperCase() + col.slice(1);
+                                        val = item[upper];
+                                    }
+                                    
+                                    // Xử lý renderers
+                                    if (config.columnRenderers && config.columnRenderers[col]) {
+                                        val = window[config.columnRenderers[col]](val, item);
+                                    } else if (col.toLowerCase() === 'rowstatus') {
+                                        val = (val === 1 || val === "1") 
+                                            ? '<span class="badge bg-success">Hoạt động</span>' 
+                                            : '<span class="badge bg-danger">Ngừng hoạt động</span>';
+                                    } else if (col.toLowerCase().includes('date') || col.toLowerCase().includes('at')) {
+                                        val = formatDateTime(val);
+                                    }
+                                    rowData.push(val === undefined || val === null ? "" : val);
+                                });
+
+                                if (config.actionRenderer) {
+                                    rowData.push(window[config.actionRenderer](item.id || item.Id || item));
+                                }
+                                mappedData.push(rowData);
+                            });
+                        }
+
+                        callback({
+                            draw: data.draw,
+                            recordsTotal: result.recordsTotal || 0,
+                            recordsFiltered: result.recordsFiltered || 0,
+                            data: mappedData
+                        });
+
+                        // Highlight rows if needed after redraw
+                        setTimeout(() => {
+                            if (config.idField) {
+                                var $rows = $(selector).find('tbody tr');
+                                result.data.forEach((item, idx) => {
+                                    var id = item[config.idField] || item[config.idField.charAt(0).toLowerCase() + config.idField.slice(1)];
+                                    $($rows[idx]).attr('data-id', id);
+                                    if (config.idDataAttr) $($rows[idx]).attr(config.idDataAttr, id);
+                                });
+                            }
+                        }, 50);
+                    })
+                    .catch(err => {
+                        console.error('❌ Error loading server-side data:', err);
+                        callback({
+                            draw: data.draw,
+                            recordsTotal: 0,
+                            recordsFiltered: 0,
+                            data: []
+                        });
+                    });
+            } else {
+                console.warn('⚠️ Blazor instance not registered for server-side pagination');
+                callback({ draw: data.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
+            }
+        };
+    }
+
+    const table = $(selector).DataTable(tableOptions);
+
+    window.dataTableInstances[selector] = table;
+    window.dataTableConfigs[selector] = config;
+    
+    // Sidebar Observer để auto resize
+    setupSidebarToggleObserver(selector);
+
+    return table;
+};
+
+// Cập nhật dữ liệu cho Generic DataTable
+window.updateGenericDataTableData = function (selector, paginatedData) {
+    console.time('DataTableRender:' + selector);
+    var table = window.dataTableInstances[selector];
+    if (!table) return;
+
+    try {
+        var config = window.dataTableConfigs[selector] || {};
+        var pageSize = paginatedData?.pageSize || 10;
+        var wrapper = $(table.table().container());
+        
+        // Sync page length dropdown
+        var dropdown = wrapper.find('.dt-page-length');
+        if (dropdown.length > 0) dropdown.val(pageSize.toString());
+
+        table.clear();
+        
+        if (paginatedData && paginatedData.items) {
+            var columns = config.columns || [];
+            paginatedData.items.forEach(function (item) {
+                var rowData = [];
+                columns.forEach(function(col) {
+                    var val = item[col];
+                    if (val === undefined) {
+                        var lower = col.charAt(0).toLowerCase() + col.slice(1);
+                        val = item[lower];
+                    }
+                    if (val === undefined) {
+                        var upper = col.charAt(0).toUpperCase() + col.slice(1);
+                        val = item[upper];
+                    }
+                    
+                    // Xử lý các kiểu hiển thị đặc biệt
+                    if (config.columnRenderers && config.columnRenderers[col]) {
+                        val = window[config.columnRenderers[col]](val, item);
+                    } else if (col.toLowerCase() === 'rowstatus') {
+                        val = (val === 1 || val === "1") 
+                            ? '<span class="badge bg-success">Hoạt động</span>' 
+                            : '<span class="badge bg-danger">Ngừng hoạt động</span>';
+                    } else if (col.toLowerCase().includes('date') || col.toLowerCase().includes('at')) {
+                        val = formatDateTime(val);
+                    }
+                    
+                    rowData.push(val === undefined || val === null ? "" : val);
+                });
+
+                // Add Actions column if configured
+                if (config.actionRenderer) {
+                    // FIX: Pass ID directly, not the whole object, to avoid [object Object] in string concatenation
+                    var itemId = item.id || item.Id || (item[config.idField] ? item[config.idField] : null);
+                    if (!itemId && config.idField) {
+                         itemId = item[config.idField.charAt(0).toLowerCase() + config.idField.slice(1)];
+                    }
+                    rowData.push(window[config.actionRenderer](itemId));
+                }
+
+                var rowNode = table.row.add(rowData).node();
+                if (rowNode && config.idField) {
+                    var id = item[config.idField] || item[config.idField.charAt(0).toLowerCase() + config.idField.slice(1)];
+                    $(rowNode).attr('data-id', id);
+                    if (config.idDataAttr) $(rowNode).attr(config.idDataAttr, id);
+                }
+            });
+        }
+
+        table.draw(false);
+        // FIX: Adjust columns to prevent header misalignment
+        setTimeout(function() {
+            table.columns.adjust();
+        }, 50);
+        if (config.bindEvents) {
+            setTimeout(() => window[config.bindEvents](selector), 100);
+        }
+    } catch (e) {
+        console.error('Error updating generic table:', e);
+    } finally {
+        console.timeEnd('DataTableRender:' + selector);
+    }
+};
+
+// Sidebar Observer để tự động điều chỉnh kích thước bảng khi đóng/mở menu
+function setupSidebarToggleObserver(selector) {
+    try {
+        const pcoded = document.getElementById('pcoded');
+        if (!pcoded || !window.MutationObserver) return;
+
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                if (mutation.type === 'attributes') {
+                    // Khi có sự thay đổi về attribute (thường là pcoded-device-type hoặc các class toggle)
+                    setTimeout(function () {
+                        const table = window.dataTableInstances[selector];
+                        if (table) {
+                            table.columns.adjust().draw(false);
+                        }
+                    }, 300); // Đợi menu animation hoàn tất
+                }
+            });
+        });
+
+        observer.observe(pcoded, {
+            attributes: true,
+            attributeFilter: ['class', 'pcoded-device-type', 'vertical-nav-type']
+        });
+    } catch (e) {
+        console.warn('Sidebar observer error:', e);
+    }
+}
+
+// Đăng ký instance của Blazor để giao tiếp với server Blazor mà không cần refresh lại trang 
 window.registerBlazorInstance = function (instance) {
     window.blazorInstance = instance;
-    // console.log('✅ Blazor instance registered');
 };
 
 // ==========================================
 // USER DATA TABLE - FULL FEATURES
 // ==========================================
-window.initUserDataTable = function (selector) {
-    console.log('🚀 Initializing UserDataTable:', selector);
 
-    if ($.fn.DataTable.isDataTable(selector)) {
-        console.log('⚠️ Destroying existing DataTable');
-        $(selector).DataTable().destroy();
-    }
-
-    // Clean up old elements
-    $('.dt-column-dropdown').remove();
-    $('.colvis-dropdown-custom').remove();
-    $('.dt-custom-toolbar').remove();
-
-    // Xóa localStorage cũ để đảm bảo mặc định là 10 khi mới vào trang
-    // Chỉ lưu lại nếu user thực sự thay đổi
-    var currentPageSize = localStorage.getItem('userTablePageSize');
-    if (!currentPageSize || !['10', '25', '50', '100'].includes(currentPageSize)) {
-        localStorage.removeItem('userTablePageSize');
-    }
-
-    var columnNames = [
-        'Id', 'Nhóm', 'Tên', 'Giới tính', 'Tên đăng nhập',
-        'Email', 'Điện thoại', 'CMND/CCCD', 'Địa chỉ', 'Hình ảnh',
-        'Ghi chú', 'Trạng thái', 'Ngày tạo', 'Người tạo', 'Ngày cập nhật', 'Người cập nhật',
-        'Hành động'
-    ];
-
-    var defaultHiddenColumns = [3, 7, 8, 9, 10, 13, 14, 15];
-
-    const table = $(selector).DataTable({
-        responsive: false,
-        searching: true,
-        ordering: true,
-        info: false,
-        paging: false,
-        lengthChange: false,
-        scrollY: 'calc(100vh - 320px)', // Sử dụng calc thay vì auto
-        scrollX: true,
-        scrollCollapse: true, //true để table co lại khi ít dữ liệu
-        autoWidth: false,
-        fixedColumns: false,
-        deferRender: true,
-
-        select: {
-            style: 'multi',
-            selector: 'td:not(:last-child)',
-            info: false
-        },
-
-        pageLength: 10,
-        pagingType: "full_numbers",
-        order: [[0, "asc"], [1, "asc"], [2, "asc"]],
-
-        layout: {
-            topStart: null,
-            topEnd: null,
-            bottomStart: null,
-            bottomEnd: null
-        },
-
-        language: {
-            zeroRecords: "Không tìm thấy dữ liệu phù hợp",
-            emptyTable: "Không có dữ liệu",
-            paginate: {
-                first: '«',
-                last: '»',
-                next: '›',
-                previous: '‹'
-            }
-        },
-
-        columnDefs: [
-            { orderable: false, targets: -1 },
-            { visible: false, targets: defaultHiddenColumns },
-            { width: '80px', targets: 0 },
-            { width: '120px', targets: -1 }
-        ],
-
-        drawCallback: function (settings) {
-            console.log('📊 DataTable drawn');
-            setTimeout(function () {
-                bindAllRowEvents(selector);
-            }, 50);
-        },
-
-        initComplete: function () {
-            console.log('✅ DataTable initialized');
-            var api = this.api();
-            var wrapper = $(api.table().container());
-            var totalColumns = api.columns().nodes().length;
-
-            createCustomToolbar(api, wrapper, columnNames, totalColumns);
-
-            // Mặc định dropdown là 10 - sẽ được sync lại bởi updateUserDataTableData
-            wrapper.find('.dt-page-length').val('10');
-            console.log('📊 Initial dropdown set to 10 (will be synced from server)');
-
-            api.columns().every(function (index) {
-                var column = this;
-                var header = $(column.header());
-
-                if (index === totalColumns - 1) return;
-                if (header.find('.dt-column-menu').length > 0) return;
-
-                createColumnMenu(column, header, index, api);
-            });
-
-            $(document).off('click.dtUserMenu').on('click.dtUserMenu', function (e) {
-                var $target = $(e.target);
-
-                if ($target.closest('.dt-column-dropdown').length > 0) {
-                    return;
-                }
-
-                if ($target.closest('.colvis-dropdown-custom').length > 0) {
-                    return;
-                }
-
-                if ($target.closest('.dt-column-menu').length > 0) {
-                    return;
-                }
-
-                if ($target.closest('.colvis-btn-custom').length > 0) {
-                    return;
-                }
-
-                $('.dt-column-dropdown').hide();
-                $('.colvis-dropdown-custom').hide();
-            });
-
-            $(window).off('scroll.dtUserMenu');
-
-            setTimeout(function () {
-                api.columns.adjust();
-            }, 150);
-        }
-    });
-
-    window.dataTableInstances[selector] = table;
-    window.selectedUserRows[selector] = [];
-
-    table.on('select deselect', function (e, dt, type, indexes) {
-        if (type === 'row') {
-            const selectedRows = table.rows({ selected: true }).nodes();
-            window.selectedUserRows[selector] = [];
-
-            $(selectedRows).each(function () {
-                const userId = $(this).data('user-id');
-                if (userId) {
-                    window.selectedUserRows[selector].push(userId);
-                }
-            });
-
-            console.log('✅ Selected rows:', window.selectedUserRows[selector]);
-        }
-    });
-
-    // RESPONSIVE: Handle window resize - chỉ cần adjust columns
-    var resizeTimeout;
-    $(window).off('resize.dtUserResize').on('resize.dtUserResize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-            
-            table.columns.adjust();
-        }, 250);
-    });
-
-    console.log('✅ UserDataTable initialized successfully');
-    return table;
-};
 
 // ==========================================
 // CREATE CUSTOM TOOLBAR
 // ==========================================
-function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
+
+// Tạo custom toolbar
+function createCustomToolbar(api, wrapper, columnNames, totalColumns, addBtnId) {
+    var addBtnHtml = addBtnId ? `
+        <button type="button" class="btn btn-success btn-sm dt-add-new-btn" id="${addBtnId}" style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        ">
+            <i class="feather icon-plus"></i>
+            <span>Thêm Mới</span>
+        </button>
+    ` : '';
+
     var toolbarHtml = `
         <div class="dt-custom-toolbar" style="
             display: flex;
@@ -250,15 +368,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
                     </select>
                     <span style="font-size: 14px; color: #666;">bản ghi</span>
                 </div>
-                <button type="button" class="btn btn-success btn-sm dt-add-new-btn" id="btnAddNewUser" style="
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    white-space: nowrap;
-                ">
-                    <i class="feather icon-plus"></i>
-                    <span>Thêm Mới</span>
-                </button>
+                ${addBtnHtml}
             </div>
             <div class="dt-toolbar-right" style="display: flex; gap: 15px; align-items: center;">
                 <div class="dt-search-wrapper" style="display: flex; gap: 8px; align-items: center;">
@@ -269,10 +379,12 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
             </div>
         </div>
     `;
-
+    // Thêm toolbar vào đầu DataTable
     wrapper.prepend(toolbarHtml);
 
+    // Lấy danh sách các cột
     var columnsList = wrapper.find('.colvis-columns-list');
+    // Lặp qua các cột
     for (var i = 0; i < totalColumns - 1; i++) {
         var isVisible = api.column(i).visible();
         var itemHtml = `
@@ -305,16 +417,17 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         `;
         columnsList.append(itemHtml);
     }
-
+    // Cấu hình sự kiện hover cho các menu
     columnsList.on('mouseenter', '.colvis-column-toggle', function () {
         $(this).css('background', '#f0f7ff');
     }).on('mouseleave', '.colvis-column-toggle', function () {
         $(this).css('background', '#ffffff');
     });
-
+    // Cấu hình sự kiện click cho nút Cột Hiển Thị
     wrapper.find('.colvis-btn-custom').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
+        // Ẩn các dropdown khác
         $('.dt-column-dropdown').hide();
         var dropdown = wrapper.find('.colvis-dropdown-custom');
         if (dropdown.is(':visible')) {
@@ -323,7 +436,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
             dropdown.show();
         }
     });
-
+    // Cấu hình sự kiện click cho các menu
     wrapper.find('.colvis-column-toggle').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -337,9 +450,9 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         var check = $(this).find('.colvis-check');
         check.text(!currentVisibility ? '✓' : '');
 
-        console.log('✅ Column visibility toggled:', columnNames[colIdx], !currentVisibility);
+        // console.log('✅ Column visibility toggled:', columnNames[colIdx], !currentVisibility);
     });
-
+    // Cấu hình sự kiện click cho nút Hiển Tất Cả
     wrapper.find('.colvis-show-all').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -350,85 +463,45 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
         wrapper.find('.colvis-column-toggle .colvis-check').text('✓');
         wrapper.find('.colvis-dropdown-custom').hide();
 
-        console.log('✅ All columns shown');
+        // console.log('✅ All columns shown');
     });
 
-    // Page length change
-    var isChangingPageSize = false;
+    // Cấu hình sự kiện thay đổi số lượng bản ghi
     wrapper.find('.dt-page-length').off('change').on('change', function (e) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        if (isChangingPageSize) {
-            console.log('⚠️ Page size change in progress, skipping');
-            return;
-        }
-
-        var pageSize = parseInt($(this).val(), 10);
-
-        if (isNaN(pageSize) || pageSize <= 0) {
-            pageSize = 10;
-        }
-
-        console.log('📊 Page size selected:', pageSize);
-
+        var pageSize = parseInt($(this).val(), 10) || 10;
         localStorage.setItem('userTablePageSize', pageSize.toString());
-
+        
         if (window.blazorInstance) {
-            isChangingPageSize = true;
-            console.log('📊 Calling Blazor ChangePageSize:', pageSize);
-            window.blazorInstance.invokeMethodAsync('ChangePageSize', pageSize)
-                .then(function () {
-                    console.log('✅ Page size changed successfully to:', pageSize);
-                    isChangingPageSize = false;
-                })
-                .catch(function (err) {
-                    console.error('❌ Page size change error:', err);
-                    isChangingPageSize = false;
-                });
-        } else {
-            console.warn('⚠️ Blazor instance not found');
+            window.blazorInstance.invokeMethodAsync('ChangePageSize', pageSize);
+        } else if (api.page.len) {
+            api.page.len(pageSize).draw();
         }
     });
 
-    // Search với debounce
+    // Cấu hình sự kiện input cho nút tìm kiếm
     var searchTimeout;
-    var isSearching = false;
-    wrapper.find('.dt-custom-search').on('input', function (e) {
-        e.stopPropagation();
+    wrapper.find('.dt-custom-search').off('input').on('input', function (e) {
         var searchValue = $(this).val();
-
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(function () {
-            if (isSearching) {
-                console.log('⚠️ Search in progress, skipping');
-                return;
-            }
-
             if (window.blazorInstance) {
-                isSearching = true;
-                console.log('🔍 Searching:', searchValue);
-                window.blazorInstance.invokeMethodAsync('SearchUsers', searchValue || '')
-                    .then(function () {
-                        console.log('✅ Search completed');
-                        isSearching = false;
-                    })
-                    .catch(function (err) {
-                        console.error('❌ Search error:', err);
-                        isSearching = false;
-                    });
+                // Ưu tiên gọi Blazor để search server-side (toàn cục 50k bản ghi)
+                window.blazorInstance.invokeMethodAsync('SearchUsers', searchValue);
+            } else {
+                api.search(searchValue).draw();
             }
         }, 500);
     });
 
-    // Add new button
+    // Cấu hình sự kiện click cho nút Thêm Mới
     wrapper.find('#btnAddNewUser').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         if (window.blazorInstance) {
-            window.blazorInstance.invokeMethodAsync('OpenAddModal')
-                .then(function () { console.log('✅ Add modal opened'); })
-                .catch(function (err) { console.error('❌ Add modal error:', err); });
+            var eventName = config.addEvent || 'OpenAddModal';
+            window.blazorInstance.invokeMethodAsync(eventName)
+                .then(function () { console.log(); })
+                .catch(function (err) { console.error(); });
         }
     });
 }
@@ -436,13 +509,11 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns) {
 // ==========================================
 // CREATE COLUMN MENU - THÊM FILTER VỚI NHIỀU KIỂU
 // ==========================================
-function createColumnMenu(column, header, index, api) {
-    // Sử dụng Unicode ☰ thay vì feather icon để đảm bảo hiển thị
+// Tạo menu cho cột
+function createColumnMenu(column, header, index, api, selector) {
     var menuBtn = $('<span class="dt-column-menu" title="Menu">☰</span>');
-
-    // Khởi tạo dropdown 
     var dropdown = $(`
-    <div class="dt-column-dropdown" data-column-index="${index}">
+    <div class="dt-column-dropdown" data-column-index="${index}" data-table="${selector}">
         <div class="dt-dropdown-item dt-sort-asc">
             <i class="feather icon-arrow-up"></i>
             <span>Sắp xếp tăng dần</span>
@@ -484,7 +555,7 @@ function createColumnMenu(column, header, index, api) {
     }).on('mouseleave', function () {
         $(this).css('background', 'white');
     });
-
+    // Tạo vị trí dropdown
     function positionDropdown() {
         var btnOffset = menuBtn.offset();
         var btnHeight = menuBtn.outerHeight();
@@ -497,7 +568,7 @@ function createColumnMenu(column, header, index, api) {
             display: 'block'
         });
     }
-
+    // xử lý sự kiện click cho nút menu
     menuBtn.on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -511,7 +582,7 @@ function createColumnMenu(column, header, index, api) {
             positionDropdown();
         }
     });
-
+    // xử lý sự kiện click cho nút sắp xếp
     dropdown.find('.dt-sort-asc').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -519,7 +590,7 @@ function createColumnMenu(column, header, index, api) {
         dropdown.hide();
         console.log('✅ Sorted ascending');
     });
-
+    // xử lý sự kiện click cho nút sắp xếp giảm dần
     dropdown.find('.dt-sort-desc').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -527,15 +598,37 @@ function createColumnMenu(column, header, index, api) {
         dropdown.hide();
         console.log('✅ Sorted descending');
     });
-
+    // xử lý sự kiện click cho nút xóa bộ lọc
+    dropdown.find('.dt-clear-filter').on('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        column.search('').draw();
+        dropdown.hide();
+        console.log('✅ Clear filter');
+    });
+    // xử lý sự kiện click cho nút ẩn cột
+    dropdown.find('.dt-hide-column').on('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        column.visible(false);
+        dropdown.hide();
+        console.log('✅ Hide column');
+    });
+    // xử lý sự kiện click cho nút lọc
+    dropdown.find('.dt-filter-input').on('input', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        applyFilter();
+    });
+   
     // FILTER INPUT - Không đóng dropdown khi typing
     var filterInput = dropdown.find('.dt-filter-input');
     var filterType = dropdown.find('.dt-filter-type');
-    
+    // xử lý sự kiện click cho nút lọc
     filterInput.on('click', function(e) {
         e.stopPropagation();
     });
-
+    // xử lý sự kiện click cho nút lọc
     filterType.on('click change', function(e) {
         e.stopPropagation();
     });
@@ -568,29 +661,28 @@ function createColumnMenu(column, header, index, api) {
         }
 
         column.search(regex, true, false).draw();
-        console.log('🔍 Filtering column', index, 'with type:', type, 'value:', searchValue);
+        // console.log('🔍 Filtering column', index, 'with type:', type, 'value:', searchValue);
     }
-
+    // xử lý sự kiện khi typing
     filterInput.on('keyup', function(e) {
         e.stopPropagation();
         applyFilter();
     });
-
+    // xử lý sự kiện khi thay đổi loại lọc
     filterType.on('change', function(e) {
         e.stopPropagation();
         applyFilter();
     });
-
-    // CLEAR FILTER
+    // xử lý sự kiện khi click vào nút xóa bộ lọc
     dropdown.find('.dt-clear-filter').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
         filterInput.val('');
         filterType.val('contains');
         column.search('').draw();
-        console.log('✅ Filter cleared for column', index);
+        // console.log('✅ Filter cleared for column', index);
     });
-
+    // xử lý sự kiện khi click vào nút ẩn cột
     dropdown.find('.dt-hide-column').on('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -598,7 +690,7 @@ function createColumnMenu(column, header, index, api) {
         dropdown.hide();
         console.log('✅ Column hidden');
     });
-
+    // xử lý sự kiện khi click vào dropdown
     dropdown.on('click mousedown', function(e) {
         e.stopPropagation();
     });
@@ -607,49 +699,51 @@ function createColumnMenu(column, header, index, api) {
 // ==========================================
 // BIND ROW EVENTS
 // ==========================================
+// 
 function bindAllRowEvents(selector) {
     var $table = $(selector);
     if (!$table.length) return;
 
-    console.log('🔗 Binding row events for:', selector);
+    // console.log('🔗 Binding row events for:', selector);
 
     $table.find('tbody tr').each(function () {
         bindRowActionEvents(this);
     });
 }
-
+// xử lý sự kiện khi click vào hàng
 function bindRowActionEvents(rowNode) {
     if (!rowNode) return;
 
     var $row = $(rowNode);
 
-    // Unbind trước để tránh duplicate
+    // xử lý sự kiện khi click vào nút sửa
     $row.find('.btn-edit-user').off('click');
     $row.find('.btn-delete-user').off('click');
 
+    // xử lý sự kiện khi click vào nút sửa
     $row.find('.btn-edit-user').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         var userId = $(this).data('user-id') || $row.data('user-id');
         if (userId && window.blazorInstance) {
-            console.log('✏️ Edit user:', userId);
+            // console.log('✏️ Edit user:', userId);
             window.blazorInstance.invokeMethodAsync('OpenEditModalById', userId.toString())
-                .catch(function (err) { console.error('❌ Edit error:', err); });
+                .catch(function (err) {  });
         } else {
-            console.warn('⚠️ Cannot edit: userId or blazorInstance missing', userId, !!window.blazorInstance);
+            // console.warn('⚠️ Cannot edit: userId or blazorInstance missing', userId, !!window.blazorInstance);
         }
     });
-
+    // xử lý sự kiện khi click vào nút xóa
     $row.find('.btn-delete-user').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         var userId = $(this).data('user-id') || $row.data('user-id');
         if (userId && window.blazorInstance) {
-            console.log('🗑️ Delete user:', userId);
+            // console.log('🗑️ Delete user:', userId);
             window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', userId.toString())
-                .catch(function (err) { console.error('❌ Delete error:', err); });
+                .catch(function (err) {  });
         } else {
-            console.warn('⚠️ Cannot delete: userId or blazorInstance missing', userId, !!window.blazorInstance);
+            // console.warn('⚠️ Cannot delete: userId or blazorInstance missing', userId, !!window.blazorInstance);
         }
     });
 }
@@ -657,152 +751,50 @@ function bindRowActionEvents(rowNode) {
 // ==========================================
 // DESTROY
 // ==========================================
-window.destroyUserDataTable = function (selector) {
-    console.log('🗑️ Destroying UserDataTable:', selector);
 
+// hủy datatable
+// hủy datatable chung
+window.destroyGenericDataTable = function (selector) {
     if (window.dataTableInstances[selector]) {
-        $(document).off('click.dtUserMenu');
-        $(window).off('scroll.dtUserMenu resize.dtUserMenu resize.dtUserResize');
-        $('.dt-column-dropdown').remove();
-        $('.colvis-dropdown-custom').remove();
-        $('.dt-custom-toolbar').remove();
-
+        $(document).off('click.dtMenu');
+        $(window).off('scroll.dtMenu resize.dtMenu');
+        $('.dt-column-dropdown[data-table="' + selector + '"]').remove();
+        
         window.dataTableInstances[selector].destroy();
         delete window.dataTableInstances[selector];
-        delete window.selectedUserRows[selector];
-
-        console.log('✅ DataTable destroyed');
+        delete window.dataTableConfigs[selector];
+        delete window.selectedRows[selector];
     }
 };
 
-window.reinitUserDataTable = function (selector) {
-    window.destroyUserDataTable(selector);
-    window.initUserDataTable(selector);
-};
+window.destroyUserDataTable = window.destroyGenericDataTable; // Backward compatibility if needed
 
 // ==========================================
 // HELPER FUNCTIONS
 // ==========================================
-window.getSelectedUserIds = function (selector) {
-    return window.selectedUserRows[selector] || [];
-};
 
-window.clearTableSelection = function (selector) {
-    if (window.dataTableInstances[selector]) {
-        window.dataTableInstances[selector].rows().deselect();
-        window.selectedUserRows[selector] = [];
-    }
-};
+// Xóa các hàm user-specific dư thừa nếu đã có generic
 
 // ==========================================
-// UPDATE DATA - Core function - FIXED cho search empty
+// UPDATE DATA - Core function
 // ==========================================
-window.updateUserDataTableData = function (selector, paginatedData) {
-    var table = window.dataTableInstances[selector];
-    if (!table) {
-        console.warn('⚠️ DataTable not found for selector:', selector);
-        return;
-    }
 
-    try {
-        var itemCount = paginatedData?.items?.length || 0;
-        var pageSize = paginatedData?.pageSize || 10;
-        console.log('📊 Updating DataTable with', itemCount, 'items, pageSize:', pageSize);
-
-        // Sync dropdown với pageSize từ server
-        var wrapper = $(table.table().container());
-        var dropdown = wrapper.find('.dt-page-length');
-        if (dropdown.length > 0 && dropdown.val() != pageSize.toString()) {
-            dropdown.val(pageSize.toString());
-            console.log('📊 Synced dropdown to:', pageSize);
-        }
-
-        // Lưu scroll position
-        var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
-        var scrollTop = scrollBody.scrollTop();
-        var scrollLeft = scrollBody.scrollLeft();
-
-        // Clear data hiện tại
-        table.clear();
-
-        if (paginatedData && paginatedData.items && paginatedData.items.length > 0) {
-            paginatedData.items.forEach(function (user) {
-                // Xử lý cả camelCase và PascalCase từ JSON serialization
-                var userId = user.id || user.Id || '';
-                var groupId = user.groupId || user.GroupId || '';
-                var name = user.name || user.Name || '';
-                var gender = user.gender !== undefined ? user.gender : (user.Gender !== undefined ? user.Gender : null);
-                var userName = user.userName || user.UserName || '';
-                var email = user.email || user.Email || '';
-                var phone = user.phone || user.Phone || '';
-                var cmnd = user.cmnd || user.Cmnd || '';
-                var address = user.address || user.Address || '';
-                var image = user.image || user.Image || '';
-                var note = user.note || user.Note || '';
-                var rowStatus = user.rowStatus !== undefined ? user.rowStatus : (user.RowStatus !== undefined ? user.RowStatus : 1);
-                var createdAt = user.createdAt || user.CreatedAt || '';
-                var createdBy = user.createdBy || user.CreatedBy || '';
-                var updatedAt = user.updatedAt || user.UpdatedAt || '';
-                var updatedBy = user.updatedBy || user.UpdatedBy || '';
-                
-                var rowData = [
-                    userId,
-                    groupId,
-                    name,
-                    getUserGenderBadge(gender),
-                    userName,
-                    email,
-                    phone,
-                    cmnd,
-                    address,
-                    getUserImageHtml(image),
-                    note,
-                    getUserStatusBadge(rowStatus),
-                    formatDateTime(createdAt),
-                    createdBy,
-                    formatDateTime(updatedAt),
-                    updatedBy,
-                    getUserActionButtons(userId)
-                ];
-
-                // Add row và set data-user-id
-                var rowNode = table.row.add(rowData).node();
-                if (rowNode && userId) {
-                    $(rowNode).attr('data-user-id', userId);
-                }
-            });
-        }
-
-        // Draw table - false để giữ vị trí
-        table.draw(false);
-
-        // Restore scroll và bind events
-        setTimeout(function () {
-            scrollBody.scrollTop(scrollTop);
-            scrollBody.scrollLeft(scrollLeft);
-
-            // Bind events SAU khi draw xong
-            bindAllRowEvents(selector);
-            
-            console.log('✅ DataTable data updated, items:', itemCount);
-        }, 100);
-
-    } catch (error) {
-        console.error('❌ Error updating DataTable data:', error);
-    }
-};
 
 // ==========================================
-// GENERIC ROW ANIMATIONS
+// HIGHLIGHT ROWS
 // ==========================================
+
+// highlight row khi thêm, cập nhật, xóa
 window.addDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-id') {
     applyGenericHighlight(selector, rowId, 'add', idAttrName);
 };
 
+// highlight row khi cập nhật
 window.updateDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-id') {
     applyGenericHighlight(selector, rowId, 'update', idAttrName);
 };
 
+// highlight row khi xóa
 window.deleteDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-id') {
     var targetId = String(rowId);
     var $row = $(selector).find('tbody tr').filter(function() {
@@ -838,6 +830,7 @@ window.deleteDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-
     }
 };
 
+// highlight row khi thêm, cập nhật, xóa
 function applyGenericHighlight(selector, rowId, type, idAttrName) {
     var targetId = String(rowId);
     var table = window.dataTableInstances[selector];
@@ -871,12 +864,12 @@ function applyGenericHighlight(selector, rowId, type, idAttrName) {
     }
 }
 
-// Aliases for compatibility
+// bí danh cho các function
 window.addUserRowSmooth = (s, id) => window.addDataTableRowSmooth(s, id, 'data-user-id');
 window.updateUserRowSmooth = (s, id) => window.updateDataTableRowSmooth(s, id, 'data-user-id');
 window.deleteUserRowSmooth = (s, id) => window.deleteDataTableRowSmooth(s, id, 'data-user-id');
 
-// Helper function cho ADD highlight
+// highlight row khi thêm
 function applyAddHighlight($row, selector) {
     // Scroll đến row
     var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
@@ -945,7 +938,7 @@ function applyAddHighlight($row, selector) {
     }, 2500);
 }
 
-// Helper function cho UPDATE highlight  
+// highlight row khi cập nhật 
 function applyUpdateHighlight($row, selector) {
     // Scroll đến row
     var scrollBody = $(selector).closest('.dt-scroll').find('.dt-scroll-body');
@@ -1015,8 +1008,9 @@ function applyUpdateHighlight($row, selector) {
 }
 
 // ==========================================
-// HELPER FUNCTIONS FOR ROW RENDERING
+// Các hàm hỗ trợ render cell 
 // ==========================================
+// render gender
 function getUserGenderBadge(gender) {
     if (gender === 1) {
         return '<span class="badge bg-primary">Nam</span>';
@@ -1027,6 +1021,7 @@ function getUserGenderBadge(gender) {
     }
 }
 
+// render status
 function getUserStatusBadge(rowStatus) {
     if (rowStatus === 1) {
         return '<span class="badge bg-success">Hoạt động</span>';
@@ -1035,6 +1030,7 @@ function getUserStatusBadge(rowStatus) {
     }
 }
 
+// render image
 function getUserImageHtml(image) {
     if (image) {
         return '<img src="' + image + '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%;" />';
@@ -1043,6 +1039,7 @@ function getUserImageHtml(image) {
     }
 }
 
+// render action
 function getUserActionButtons(userId) {
     return '<button class="btn btn-sm btn-warning me-1 btn-edit-user" data-user-id="' + userId + '" title="Chỉnh sửa">' +
         '<i class="feather icon-edit"></i></button>' +
@@ -1050,6 +1047,7 @@ function getUserActionButtons(userId) {
         '<i class="feather icon-trash-2"></i></button>';
 }
 
+// render date time
 function formatDateTime(dateString) {
     if (!dateString) return '';
 
@@ -1069,212 +1067,14 @@ function formatDateTime(dateString) {
     }
 }
 
-// ==========================================
-// GROUP DATA TABLE - FULL FEATURES
-// ==========================================
-window.initGroupDataTable = function (selector, config) {
-    console.log('🚀 Initializing GroupDataTable:', selector, config);
-    
-    config = config || {};
-    var columnNames = config.columnNames || ['Mã Nhóm', 'Tên Nhóm', 'Ghi chú', 'Trạng thái', 'Thao tác'];
-    var defaultHiddenColumns = config.hiddenColumns || [];
-
-    const table = $(selector).DataTable({
-        responsive: false,
-        paging: false,
-        ordering: true,
-        info: false,
-        searching: false, // Changed from true
-        scrollY: 'calc(100vh - 350px)',
-        scrollX: true,
-        scrollCollapse: true,
-        autoWidth: false, // CRITICAL: Disable autoWidth to handle external resize better
-        deferRender: true,
-        order: [[1, "asc"]],
-        lengthChange: false, // Kept from original
-
-        layout: {
-            topStart: null, topEnd: null, bottomStart: null, bottomEnd: null
-        },
-
-        language: {
-            zeroRecords: "Không tìm thấy dữ liệu phù hợp",
-            emptyTable: "Không có dữ liệu",
-            paginate: { first: '«', last: '»', next: '›', previous: '‹' }
-        },
-
-        columnDefs: [
-            { orderable: false, targets: -1 },
-            { width: '100px', targets: 0 },
-            { width: '120px', targets: -1 }
-        ],
-
-        drawCallback: function (settings) {
-            setTimeout(function () {
-                bindGroupRowEvents(selector);
-            }, 50);
-        },
-
-        initComplete: function () {
-            var api = this.api();
-            var wrapper = $(api.table().container());
-            var totalColumns = api.columns().nodes().length;
-
-            createCustomToolbar(api, wrapper, columnNames, totalColumns);
-
-            api.columns().every(function (index) {
-                var column = this;
-                var header = $(column.header());
-                if (index === totalColumns - 1) return;
-                createColumnMenu(column, header, index, api);
-            });
-            
-            setTimeout(function () {
-                api.columns.adjust();
-            }, 150);
-        }
-    });
-
-    window.dataTableInstances[selector] = table;
-    window.dataTableConfigs[selector] = config; // Store config for update
-
-    // Responsive adjust
-    var resizeTimeout;
-    $(window).off('resize.dtGroupResize').on('resize.dtGroupResize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-            table.columns.adjust();
-        }, 250);
-    });
-
-    // Sidebar Toggle Observer
-    setupSidebarToggleObserver(selector);
-
-    return table;
+// render group action
+window.getGroupActionButtons = function(item) {
+    var id = item.id || item.Id;
+    var name = item.name || item.Name;
+    return `
+        <div class="btn-group">
+            <button class="btn btn-primary btn-sm btn-edit-group" data-id="${id}" title="Sửa"><i class="feather icon-edit"></i></button>
+            <button class="btn btn-danger btn-sm btn-delete-group" data-id="${id}" data-name="${name}" title="Xóa"><i class="feather icon-trash-2"></i></button>
+        </div>
+    `;
 };
-
-function setupSidebarToggleObserver(selector) {
-    // Watch for class changes on body or .pcoded which indicate sidebar toggle
-    var targetNode = document.querySelector('.pcoded') || document.body;
-    if (!targetNode) return;
-
-    var observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.attributeName === "class" || mutation.attributeName === "vertical-nav-type") {
-                console.log('📐 Sidebar state changed, re-adjusting table:', selector);
-                window.reAdjustTable(selector);
-            }
-        });
-    });
-
-    observer.observe(targetNode, { attributes: true });
-}
-
-function bindGroupRowEvents(selector) {
-    var $table = $(selector);
-    console.log('🔗 Binding Group row events for:', selector);
-
-    $table.find('tbody').off('click', '.btn-edit-group').on('click', '.btn-edit-group', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var groupId = $(this).attr('data-id');
-        console.log('✏️ Edit clicked for GRP ID:', groupId);
-        if (groupId && window.blazorInstance) {
-            window.blazorInstance.invokeMethodAsync('EditGroup', groupId.toString())
-                .then(() => console.log('✅ Blazor EditGroup called'))
-                .catch(err => console.error('❌ Blazor EditGroup error:', err));
-        } else {
-            console.warn('⚠️ Cannot edit group: groupId or blazorInstance missing', groupId, !!window.blazorInstance);
-        }
-    });
-
-    $table.find('tbody').off('click', '.btn-delete-group').on('click', '.btn-delete-group', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var groupId = $(this).attr('data-id');
-        var groupName = $(this).attr('data-name');
-        console.log('🗑️ Delete clicked for GRP:', groupId, groupName);
-        if (groupId && window.blazorInstance) {
-            window.blazorInstance.invokeMethodAsync('DeleteGroup', groupId.toString(), (groupName || "").toString())
-                .then(() => console.log('✅ Blazor DeleteGroup called'))
-                .catch(err => console.error('❌ Blazor DeleteGroup error:', err));
-        }
-    });
-}
-
-window.reAdjustTable = function (selector) {
-    var table = window.dataTableInstances[selector];
-    if (table) {
-        console.log('🔄 Re-adjusting table:', selector);
-        setTimeout(function() {
-            table.columns.adjust().draw(false);
-        }, 300); // Wait for sidebar animation
-    }
-};
-
-window.updateGroupDataTableData = function (selector, paginatedData) {
-    var table = window.dataTableInstances[selector];
-    if (!table) return;
-
-    try {
-        var pageSize = paginatedData?.pageSize || 10;
-        var wrapper = $(table.table().container());
-        var lengthDropdown = wrapper.find('.dt-page-length');
-        if (lengthDropdown.length > 0) {
-            lengthDropdown.val(pageSize.toString());
-        }
-
-        table.clear();
-
-        if (paginatedData && paginatedData.items) {
-            var config = window.dataTableConfigs[selector] || {};
-            var columns = config.columns || ['id', 'name', 'note', 'rowStatus'];
-
-            paginatedData.items.forEach(function (group) {
-                var rowData = [];
-                columns.forEach(function(col) {
-                    // Try all case variations: original, lowercase first, uppercase first
-                    var val = group[col];
-                    if (val === undefined) {
-                        var lower = col.charAt(0).toLowerCase() + col.slice(1);
-                        val = group[lower];
-                    }
-                    if (val === undefined) {
-                        var upper = col.charAt(0).toUpperCase() + col.slice(1);
-                        val = group[upper];
-                    }
-                    if (val === undefined) val = "";
-
-                    if (col.toLowerCase() === 'rowstatus') {
-                        var status = (val !== "" && val !== undefined) ? val : 1;
-                        val = status === 1 
-                            ? '<span class="badge bg-success">Hoạt động</span>' 
-                            : '<span class="badge bg-danger">Ngừng hoạt động</span>';
-                    }
-                    rowData.push(val);
-                });
-
-                var id = group.id || group.Id;
-                var name = group.name || group.Name;
-                var actions = `
-                    <div class="btn-group">
-                        <button class="btn btn-primary btn-sm btn-edit-group" data-id="${id}" title="Sửa"><i class="feather icon-edit"></i></button>
-                        <button class="btn btn-danger btn-sm btn-delete-group" data-id="${id}" data-name="${name}" title="Xóa"><i class="feather icon-trash-2"></i></button>
-                    </div>
-                `;
-                rowData.push(actions);
-
-                var rowNode = table.row.add(rowData).node();
-                if (rowNode) $(rowNode).attr('data-group-id', id);
-            });
-        }
-        table.draw(false);
-        setTimeout(() => bindGroupRowEvents(selector), 100);
-    } catch (e) {
-        console.error('Error updating group table:', e);
-    }
-};
-
-window.addGroupRowSmooth = (s, id) => window.addDataTableRowSmooth(s, id, 'data-group-id');
-window.updateGroupRowSmooth = (s, id) => window.updateDataTableRowSmooth(s, id, 'data-group-id');
-window.deleteGroupRowSmooth = (s, id) => window.deleteDataTableRowSmooth(s, id, 'data-group-id');
