@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant User as Người dùng
+    participant Blazor as WebBlazor (UI)
+    participant API as GroupController
+    participant Service as UsGroupService
+    participant DB as SQL Server
+
+    User->>Blazor: Thay đổi thông tin Nhóm & Lưu
+    Blazor->>API: PUT /api/Group (với JWT Token)
+    API->>Service: Update(model) 
+    Service->>DB: Truy vấn Group theo ID
+    DB-->>Service: Entity hiện tại
+    Service->>Service: Mapping dữ liệu mới & cập nhật Audit fields
+    Service->>DB: SaveChangesAsync
+    DB-->>Service: Success
+    Service-->>API: Trả về UsGroupViewModel (Updated)
+    API-->>Blazor: 200 OK
+    Blazor-->>User: Thông báo cập nhật thành công

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant User as Người dùng
+    participant Blazor as WebBlazor (UI)
+    participant API as UserController
+    participant Service as UsUserService
+    participant DB as SQL Server
+
+    User->>Blazor: Tìm kiếm/Chuyển trang
+    Blazor->>API: GET /api/User/paginated (PaginatedRequest)
+    API->>Service: GetPaginated(request)
+    Service->>DB: Query UsUsers JOIN UsGroups (Where Active)
+    DB-->>Service: Danh sách User & Tổng số bản ghi
+    Service->>DB: Truy vấn tên người tạo/sửa (CreatedBy/UpdatedBy)
+    DB-->>Service: Danh sách Name tương ứng
+    Service->>Service: Mapping thông tin vào ViewModel
+    Service-->>API: Trả về PaginatedResponse<UsUserViewModel>
+    API-->>Blazor: 200 OK
+    Blazor-->>User: Hiển thị dữ liệu lên Table

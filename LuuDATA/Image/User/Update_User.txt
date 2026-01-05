@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant User as Người dùng
+    participant Blazor as WebBlazor (UI)
+    participant API as UserController
+    participant Service as UsUserService
+    participant DB as SQL Server
+
+    User->>Blazor: Thay đổi thông tin & Lưu
+    Blazor->>API: PUT /api/User/{id} (UsUserUpdateModel)
+    API->>Service: Update(model)
+    Service->>DB: Truy vấn User theo ID
+    DB-->>Service: Entity hiện tại
+    alt Có đổi mật khẩu
+        Service->>Service: SHA1 Hash mật khẩu mới
+    end
+    Service->>Service: Cập nhật thông tin (Name, Email.)
+    Service->>DB: SaveChangesAsync
+    DB-->>Service: Success
+    Service-->>API: Trả về UsUserViewModel (Updated)
+    API-->>Blazor: 200 OK
+    Blazor-->>User: Thông báo cập nhật thành công

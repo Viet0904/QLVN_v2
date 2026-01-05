@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant User as Người dùng
+    participant Blazor as WebBlazor (UI)
+    participant API as ThemeController
+    participant Service as SysThemeService
+    participant DB as SQL Server
+
+    User->>Blazor: Thay đổi màu sắc/giao diện
+    Blazor->>API: POST /api/Theme (ThemeSettingsUpdateModel)
+    API->>Service: SaveThemeSettingsAsync(userId, settings)
+    Service->>Service: Chuyển đổi Model sang JSON string
+    Service->>DB: UPDATE UsUsers SET Theme = {json} WHERE Id = {userId}
+    DB-->>Service: OK
+    Service-->>API: Trả về thông báo thành công
+    API-->>Blazor: 200 OK
+    Blazor-->>User: Áp dụng giao diện mới ngay lập tức
+[cite_start]``` [cite: 3, 5, 7]

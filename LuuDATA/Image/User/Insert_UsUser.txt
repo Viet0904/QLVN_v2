@@ -1,7 +1,7 @@
 sequenceDiagram
     participant User as Người dùng
     participant Blazor as WebBlazor (UI)
-    participant API as Web API Controller
+    participant API as UserController
     participant Service as UsUserService
     participant DB as SQL Server
 
@@ -10,8 +10,14 @@ sequenceDiagram
     API->>Service: Create(model)
     Service->>DB: Kiểm tra trùng UserName
     DB-->>Service: OK
-    Service->>Service: Sinh ID & Encrypt Password
+    Service->>Service: Bắt đầu Transaction
+    loop Sinh ID duy nhất
+        Service->>Service: Sinh ngẫu nhiên ID (8 ký tự)
+        Service->>DB: Kiểm tra ID tồn tại
+    end
+    Service->>Service: SHA1 Hash Password & Gán thông tin Audit
     Service->>DB: Insert UsUser Table
+    Service->>DB: Commit Transaction
     DB-->>Service: Success
     Service-->>API: Trả về UsUserViewModel
     API-->>Blazor: 201 Created

@@ -4,6 +4,7 @@
 @using Common.Model.UsUser
 @using Common.Model.UsUserPermission
 @using Common.Model.Common
+@using Microsoft.AspNetCore.Components.Forms
 @inject UserApiClient GroupApi
 @inject IJSRuntime JS
 @inject NotificationService Notification
@@ -172,7 +173,8 @@
                     columns = TableColumns.Select(c => c.Property).ToArray(),
                     idField = "Id",
                     actionRenderer = "getGroupActionButtons",
-                    addBtnId = "btnAddNewGroup"
+                    addBtnId = "btnAddNewGroup",
+                    bindEvents = "bindAllRowEvents"  // xử lý sự kiện cho các nút trong bảng
                 };
 
                 await JS.InvokeVoidAsync("initGenericDataTable", $"#{tableId}", config);
@@ -246,11 +248,16 @@
         }
     }
 
-    [JSInvokable("DeleteGroup")]
-    public async Task OpenDeleteModal(string id, string name)
+    [JSInvokable("OpenDeleteModalById")]
+    public async Task OpenDeleteModalById(string id, string name)
     {
-        deleteGroupId = id;
-        deleteGroupName = name;
+       
+    }
+
+    private async Task OpenDeleteModal(UsGroupViewModel group)
+    {
+        deleteGroupId = group.Id;
+        deleteGroupName = group.Name;
         isDeleteModalVisible = true;
         StateHasChanged();
     }

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant User as Người dùng
+    participant Blazor as WebBlazor (UI)
+    participant API as UserController
+    participant Service as UsUserService
+    participant DB as SQL Server
+
+    User->>Blazor: Nhấn nút Xóa người dùng
+    Blazor->>API: DELETE /api/User/{id} (với JWT Token)
+    API->>Service: Delete(id)
+    Service->>DB: Truy vấn UsUser theo ID
+    DB-->>Service: Entity hiện tại
+    Service->>Service: Cập nhật RowStatus = 2 (Deleted) 
+    Service->>DB: SaveChangesAsync
+    DB-->>Service: Success
+    Service-->>API: Trả về true 
+    API-->>Blazor: 204 No Content
+    Blazor-->>User: Hiển thị thông báo thành công & Refresh Table

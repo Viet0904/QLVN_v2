@@ -107,8 +107,8 @@ window.initGenericDataTable = function (selector, config) {
                                         val = window[config.columnRenderers[col]](val, item);
                                     } else if (col.toLowerCase() === 'rowstatus') {
                                         val = (val === 1 || val === "1") 
-                                            ? '<span class="badge bg-success">Hoạt động</span>' 
-                                            : '<span class="badge bg-danger">Ngừng hoạt động</span>';
+                                            ? '<span class="badge bg-success">Đang Hoạt động</span>' 
+                                            : '<span class="badge bg-danger">Đã xóa</span>';
                                     } else if (col.toLowerCase().includes('date') || col.toLowerCase().includes('at')) {
                                         val = formatDateTime(val);
                                     }
@@ -142,7 +142,7 @@ window.initGenericDataTable = function (selector, config) {
                         }, 50);
                     })
                     .catch(err => {
-                        console.error('❌ Error loading server-side data:', err);
+                        //console.error('❌ Error loading server-side data:', err);
                         callback({
                             draw: data.draw,
                             recordsTotal: 0,
@@ -151,7 +151,7 @@ window.initGenericDataTable = function (selector, config) {
                         });
                     });
             } else {
-                console.warn('⚠️ Blazor instance not registered for server-side pagination');
+                //console.warn('⚠️ Blazor instance not registered for server-side pagination');
                 callback({ draw: data.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
             }
         };
@@ -170,7 +170,7 @@ window.initGenericDataTable = function (selector, config) {
 
 // Cập nhật dữ liệu cho Generic DataTable
 window.updateGenericDataTableData = function (selector, paginatedData) {
-    console.time('DataTableRender:' + selector);
+    //console.time('DataTableRender:' + selector);
     var table = window.dataTableInstances[selector];
     if (!table) return;
 
@@ -234,7 +234,7 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
         }
 
         table.draw(false);
-        // FIX: Adjust columns to prevent header misalignment
+   
         setTimeout(function() {
             table.columns.adjust();
         }, 50);
@@ -242,9 +242,9 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
             setTimeout(() => window[config.bindEvents](selector), 100);
         }
     } catch (e) {
-        console.error('Error updating generic table:', e);
+        
     } finally {
-        console.timeEnd('DataTableRender:' + selector);
+       
     }
 };
 
@@ -282,14 +282,7 @@ window.registerBlazorInstance = function (instance) {
     window.blazorInstance = instance;
 };
 
-// ==========================================
-// USER DATA TABLE - FULL FEATURES
-// ==========================================
 
-
-// ==========================================
-// CREATE CUSTOM TOOLBAR
-// ==========================================
 
 // Tạo custom toolbar
 function createCustomToolbar(api, wrapper, columnNames, totalColumns, config) {
@@ -488,15 +481,15 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns, config) {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(function () {
             if (window.blazorInstance) {
-                // Ưu tiên gọi Blazor để search server-side (toàn cục 50k bản ghi)
+                // Ưu tiên gọi Blazor để search server-side 
                 window.blazorInstance.invokeMethodAsync('SearchUsers', searchValue);
             } else {
                 api.search(searchValue).draw();
             }
-        }, 500);
+        }, 500);    
     });
 
-    // Cấu hình sự kiện click cho nút Thêm Mới - FIX: Use delegation because button is dynamic
+    // Cấu hình sự kiện click cho nút Thêm Mới 
     $(document).off('click', '.dt-add-new-btn').on('click', '.dt-add-new-btn', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -504,7 +497,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns, config) {
             var eventName = $(this).data('event') || 'OpenAddModal';
             window.blazorInstance.invokeMethodAsync(eventName)
                 .then(function () { /* success */ })
-                .catch(function (err) { console.error('Error invoking Blazor method:', err); });
+                .catch(function (err) {  });
         }
     });
 }
@@ -719,9 +712,11 @@ function bindRowActionEvents(rowNode) {
 
     var $row = $(rowNode);
 
-    // xử lý sự kiện khi click vào nút sửa
+    // xử lý sự kiện khi click vào nút sửa của user 
     $row.find('.btn-edit-user').off('click');
     $row.find('.btn-delete-user').off('click');
+    $row.find('.btn-edit-group').off('click');
+    $row.find('.btn-delete-group').off('click');
 
     // xử lý sự kiện khi click vào nút sửa
     $row.find('.btn-edit-user').on('click', function (e) {
@@ -731,25 +726,50 @@ function bindRowActionEvents(rowNode) {
         if (userId && window.blazorInstance) {
             // console.log('✏️ Edit user:', userId);
             window.blazorInstance.invokeMethodAsync('OpenEditModalById', userId.toString())
-                .catch(function (err) {  });
+                .catch(function (err) { });
         } else {
-            // console.warn('⚠️ Cannot edit: userId or blazorInstance missing', userId, !!window.blazorInstance);
+
         }
     });
-    // xử lý sự kiện khi click vào nút xóa
+    // xử lý sự kiện khi click vào nút xóa user
     $row.find('.btn-delete-user').on('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         var userId = $(this).data('user-id') || $row.data('user-id');
         if (userId && window.blazorInstance) {
-            // console.log('🗑️ Delete user:', userId);
+
             window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', userId.toString())
-                .catch(function (err) {  });
+                .catch(function (err) { });
         } else {
-            // console.warn('⚠️ Cannot delete: userId or blazorInstance missing', userId, !!window.blazorInstance);
+
+        }
+    });
+
+    // xử lý sự kiện khi click vào nút sửa Group 
+    $row.find('.btn-edit-group').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var groupId = $(this).data('id');
+        if (groupId && window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('EditGroup', groupId.toString())
+                .catch(function (err) { console.error('Error editing group:', err); });
+        }
+    });
+
+    // xử lý sự kiện khi click vào nút xóa Group
+    $row.find('.btn-delete-group').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var groupId = $(this).data('id');
+        var groupName = $(this).data('name') || 'Nhóm';
+        if (groupId && window.blazorInstance) {
+            window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', groupId.toString(), groupName)
+                .catch(function (err) { });
         }
     });
 }
+
+// 
 
 // ==========================================
 // DESTROY
@@ -772,20 +792,7 @@ window.destroyGenericDataTable = function (selector) {
 
 window.destroyUserDataTable = window.destroyGenericDataTable; // Backward compatibility if needed
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
 
-// Xóa các hàm user-specific dư thừa nếu đã có generic
-
-// ==========================================
-// UPDATE DATA - Core function
-// ==========================================
-
-
-// ==========================================
-// HIGHLIGHT ROWS
-// ==========================================
 
 // highlight row khi thêm, cập nhật, xóa
 window.addDataTableRowSmooth = function (selector, rowId, idAttrName = 'data-id') {
@@ -1042,13 +1049,25 @@ function getUserImageHtml(image) {
     }
 }
 
-// render action
+// render User action
 function getUserActionButtons(userId) {
     return '<button class="btn btn-sm btn-warning me-1 btn-edit-user" data-user-id="' + userId + '" title="Chỉnh sửa">' +
         '<i class="feather icon-edit"></i></button>' +
         '<button class="btn btn-sm btn-danger btn-delete-user" data-user-id="' + userId + '" title="Xóa">' +
         '<i class="feather icon-trash-2"></i></button>';
 }
+
+// render group action
+window.getGroupActionButtons = function (item) {
+    var id = item.id || item.Id;
+    var name = item.name || item.Name;
+    return `
+        <div class="btn-group">
+            <button class="btn btn-primary btn-sm btn-edit-group" data-id="${id}" title="Sửa"><i class="feather icon-edit"></i></button>
+            <button class="btn btn-danger btn-sm btn-delete-group" data-id="${id}" data-name="${name}" title="Xóa"><i class="feather icon-trash-2"></i></button>
+        </div>
+    `;
+};
 
 // render date time
 function formatDateTime(dateString) {
@@ -1070,14 +1089,5 @@ function formatDateTime(dateString) {
     }
 }
 
-// render group action
-window.getGroupActionButtons = function(item) {
-    var id = item.id || item.Id;
-    var name = item.name || item.Name;
-    return `
-        <div class="btn-group">
-            <button class="btn btn-primary btn-sm btn-edit-group" data-id="${id}" title="Sửa"><i class="feather icon-edit"></i></button>
-            <button class="btn btn-danger btn-sm btn-delete-group" data-id="${id}" data-name="${name}" title="Xóa"><i class="feather icon-trash-2"></i></button>
-        </div>
-    `;
-};
+
+
