@@ -5,6 +5,7 @@
 @using Common.Model.UsUserPermission
 @using Common.Model.Common
 @using Microsoft.AspNetCore.Components.Forms
+@using Common.Library.Constant
 @inject UserApiClient GroupApi
 @inject IJSRuntime JS
 @inject NotificationService Notification
@@ -229,9 +230,9 @@
         StateHasChanged();
     }
 
-
-    [JSInvokable]
-    public async Task EditGroup(string id)
+    // Hàm này được gọi từ JS $row.find('.btn-edit-group') để mở modal chỉnh sửa theo Id nhóm 
+    [JSInvokable("OpenEditModalById")]
+    public async Task OpenEditModalById(string id)
     {
         var group = await GroupApi.GetGroupByIdAsync(id); 
         if (group != null)
@@ -247,23 +248,22 @@
             await JS.InvokeVoidAsync("eval", "$('#groupModal').modal('show')");
         }
     }
-
+    // Hàm này được gọi từ JS $row.find('.btn-delete-group') để mở modal xóa theo Id nhóm
     [JSInvokable("OpenDeleteModalById")]
-    public async Task OpenDeleteModalById(string id, string name)
+    public async Task OpenDeleteModalById(string groupId)
     {
-       
-    }
-
-    private async Task OpenDeleteModal(UsGroupViewModel group)
-    {
-        deleteGroupId = group.Id;
-        deleteGroupName = group.Name;
-        isDeleteModalVisible = true;
-        StateHasChanged();
+        var group = paginatedGroups.Items.FirstOrDefault(g => g.Id == groupId);
+        if (group != null)
+        {
+            deleteGroupId = group.Id;
+            deleteGroupName = group.Name;
+            isDeleteModalVisible = true;
+            StateHasChanged();
+        }
     }
 
     [JSInvokable("OpenAddModal")]
-    public async Task ShowAddModal()
+    public async Task OpenAddModal()
     {
         GroupModel = new UsGroupFormModel { RowStatus = 1 };
         isEditMode = false;
@@ -283,7 +283,7 @@
                 var updated = await GroupApi.UpdateGroupAsync(model);
                 if (updated != null)
                 {
-                    await Notification.ShowSuccessAsync("Cập nhật nhóm thành công");
+                    await Notification.ShowSuccessAsync(MessageConstant.CREATED_SUCCESS);
                     await RefreshData();
                     await JS.InvokeVoidAsync("updateDataTableRowSmooth", $"#{tableId}", updated.Id);
                 }
@@ -294,7 +294,7 @@
                 var created = await GroupApi.CreateGroupAsync(model);
                 if (created != null)
                 {
-                    await Notification.ShowSuccessAsync("Thêm nhóm mới thành công");
+                    await Notification.ShowSuccessAsync(MessageConstant.CREATED_SUCCESS);
                     await RefreshData();
                     await JS.InvokeVoidAsync("addDataTableRowSmooth", $"#{tableId}", created.Id);
                 }
@@ -323,7 +323,7 @@
             var result = await GroupApi.DeleteGroupAsync(deleteGroupId);
             if (result)
             {
-                await Notification.ShowSuccessAsync("Xóa nhóm thành công");
+                await Notification.ShowSuccessAsync(MessageConstant.DELETED_SUCCESS);
                 await RefreshData();
             }
             isDeleteModalVisible = false;

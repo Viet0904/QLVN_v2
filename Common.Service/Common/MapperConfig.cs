@@ -40,15 +40,15 @@ namespace Common.Service.Common
             cfg.CreateMap<UsUser, UsUserViewModel>()
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.CreatedAt)))
                 .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => DateTimeHelper.ToString(src.UpdatedAt)))
-                .ForMember(dest => dest.CMND, opt => opt.MapFrom(src => src.Cmnd))
+                .ForMember(dest => dest.CMND, opt => opt.MapFrom(src => src.CMND))
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address));
 
             cfg.CreateMap<UsUserCreateModel, UsUser>()
-                .ForMember(dest => dest.Cmnd, opt => opt.MapFrom(src => src.CMND))
+                .ForMember(dest => dest.CMND, opt => opt.MapFrom(src => src.CMND))
                 .IgnoreAllNonExisting();
 
             cfg.CreateMap<UsUserUpdateModel, UsUser>()
-                .ForMember(dest => dest.Cmnd, opt => opt.MapFrom(src => src.CMND))
+                .ForMember(dest => dest.CMND, opt => opt.MapFrom(src => src.CMND))
                 .IgnoreAllNonExisting();
 
             #endregion

@@ -78,7 +78,7 @@ namespace Common.Service
                     {
                         if (string.IsNullOrEmpty(model.GroupId))
                         {
-                            throw new Exception("Vui lòng chọn nhóm trước khi lưu!");
+                            throw new Exception(MessageConstant.GROUP_NOT_NULL);
                         }
 
                         var item = new UsUser();
@@ -88,7 +88,7 @@ namespace Common.Service
                         item.Email = model.Email;
                         item.Phone = model.Phone;
                         item.Gender = model.Gender;
-                        item.Cmnd = model.CMND;
+                        item.CMND = model.CMND;
                         item.Address = model.Address;
                         item.Note = model.Note;
                         item.RowStatus = model.RowStatus;
@@ -96,12 +96,11 @@ namespace Common.Service
                     generateId:
                         string randomPart = GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
                         string generatedId = item.GroupId + randomPart;
-                        
-                        // Safeguard: Truncate to 8 chars if it exceeds limit (DB constraint is 8)
+
+                        // nếu Id dài hơn 8 ký tự thì cắt bớt
                         if (generatedId.Length > 8)
                         {
-                            // If we have to truncate, we take the last 8 chars or some other logic?
-                            // Usually, we want to keep the suffix as it's the unique part.
+                            
                             generatedId = generatedId.Substring(generatedId.Length - 8);
                         }
                         item.Id = generatedId;
@@ -147,7 +146,7 @@ namespace Common.Service
                     result.Email = model.Email;
                     result.Phone = model.Phone;
                     result.Gender = model.Gender;
-                    result.Cmnd = model.CMND;
+                    result.CMND = model.CMND;
                     result.Address = model.Address;
                     result.Note = model.Note;
                     result.RowStatus = model.RowStatus;
@@ -208,22 +207,31 @@ namespace Common.Service
             {
                 var searchLower = request.SearchTerm.ToLower();
                 query = query.Where(u =>
+                    (u.Id != null && u.Id.Contains(searchLower)) ||
                     (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
                     (u.UserName != null && u.UserName.ToLower().Contains(searchLower)) ||
                     (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
                     (u.Phone != null && u.Phone.ToLower().Contains(searchLower)) ||
                     (u.Group.Name != null && u.Group.Name.ToLower().Contains(searchLower)) // Search trực tiếp trên bảng Join
+
                 );
             }
 
             // Sorting
             query = request.SortColumn?.ToLower() switch
             {
+                "id" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Id) : query.OrderBy(u => u.Id),
                 "name" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
                 "username" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UserName) : query.OrderBy(u => u.UserName),
                 "email" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
                 "groupname" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Group.Name) : query.OrderBy(u => u.Group.Name),
                 "createdat" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+                "createdby" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.CreatedBy) : query.OrderBy(u => u.CreatedBy),
+                "updatedat" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UpdatedAt) : query.OrderBy(u => u.UpdatedAt),
+                "updatedby" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UpdatedBy) : query.OrderBy(u => u.UpdatedBy),
+                "GroupId" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.GroupId) : query.OrderBy(u => u.GroupId),
+                    
+
                 _ => query.OrderByDescending(u => u.CreatedAt)
             };
 
@@ -240,7 +248,7 @@ namespace Common.Service
                     UserName = u.UserName,
                     Email = u.Email,
                     Phone = u.Phone,
-                    CMND = u.Cmnd,
+                    CMND = u.CMND,
                     Address = u.Address,
                     Note = u.Note,
                     Gender = u.Gender,
@@ -249,29 +257,36 @@ namespace Common.Service
                     RowStatus = u.RowStatus,
                     CreatedAt = u.CreatedAt,
                     CreatedBy = u.CreatedBy,
-                    UpdatedBy = u.UpdatedBy
+                    UpdatedBy = u.UpdatedBy,
+                    UpdatedAt = u.UpdatedAt
                 })
                 .ToListAsync();
 
             // Xử lý mapping tên người tạo/sửa (Vẫn giữ logic tối ưu này)
             if (items.Any())
             {
+
+                // Lấy ra danh sách userId duy nhất từ CreatedBy và UpdatedBy
                 var userIds = items.SelectMany(u => new[] { u.CreatedBy, u.UpdatedBy })
                                    .Where(id => !string.IsNullOrEmpty(id))
                                    .Distinct()
                                    .ToList();
-
+                // Lấy tên người dùng từ bảng UsUsers dựa trên danh sách userId
                 if (userIds.Any())
                 {
+                    // Tạo dictionary để tra cứu nhanh
                     var userNames = await DbContext.UsUsers.AsNoTracking()
                                            .Where(u => userIds.Contains(u.Id))
                                            .Select(u => new { u.Id, u.Name })
                                            .ToDictionaryAsync(u => u.Id, u => u.Name);
 
+
+                    // Gán tên người tạo và người cập nhật vào từng item
                     foreach (var item in items)
                     {
                         if (!string.IsNullOrEmpty(item.CreatedBy) && userNames.TryGetValue(item.CreatedBy, out var cName))
                             item.CreatedName = cName;
+                        
                         if (!string.IsNullOrEmpty(item.UpdatedBy) && userNames.TryGetValue(item.UpdatedBy, out var uName))
                             item.UpdatedName = uName;
                     }

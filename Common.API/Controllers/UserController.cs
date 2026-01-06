@@ -31,7 +31,7 @@ namespace Common.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting all users");
+                //_logger.LogError(ex, "Error getting all users");
                 return StatusCode(500, new { message = MessageConstant.DATA_NOT_FOUND, error = ex.Message });
             }
         }
@@ -48,7 +48,7 @@ namespace Common.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting user by id: {Id}", id);
+                //_logger.LogError(ex, "Error getting user by id: {Id}", id);
                 return StatusCode(500, new { message = "Lỗi khi lấy thông tin người dùng", error = ex.Message });
             }
         }
@@ -58,15 +58,15 @@ namespace Common.API.Controllers
         {
             try
             {
-                _logger.LogInformation("GetPaginated called with PageNumber={PageNumber}, PageSize={PageSize}",
-                    request.PageNumber, request.PageSize);
+                //_logger.LogInformation("GetPaginated called with PageNumber={PageNumber}, PageSize={PageSize}",
+                //    request.PageNumber, request.PageSize);
 
                 var result = await _userService.GetPaginated(request);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting paginated users");
+                //_logger.LogError(ex, "Error getting paginated users");
                 return StatusCode(500, new { message = "Lỗi khi lấy danh sách người dùng phân trang", error = ex.Message });
             }
         }
@@ -86,7 +86,7 @@ namespace Common.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating user");
+                //_logger.LogError(ex, "Error creating user");
                 return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo người dùng", error = ex.Message });
             }
         }
@@ -106,7 +106,7 @@ namespace Common.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating user: {Id}", id);
+                //_logger.LogError(ex, "Error updating user: {Id}", id);
                 return StatusCode(500, new { message = "Đã xảy ra lỗi khi cập nhật người dùng", error = ex.Message });
             }
         }
@@ -125,7 +125,7 @@ namespace Common.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting user: {Id}", id);
+                //_logger.LogError(ex, "Error deleting user: {Id}", id);
                 return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa người dùng", error = ex.Message });
             }
         }

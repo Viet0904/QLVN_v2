@@ -21,7 +21,7 @@ public partial class UsUser
 
     public string? Phone { get; set; }
 
-    public string? Cmnd { get; set; }
+    public string? CMND { get; set; }
 
     public string? Address { get; set; }
 

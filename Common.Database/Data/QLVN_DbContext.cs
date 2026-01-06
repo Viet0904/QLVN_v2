@@ -946,7 +946,7 @@ public partial class QLVN_DbContext : DbContext
 
             entity.Property(e => e.Id).HasMaxLength(8);
             entity.Property(e => e.Address).HasMaxLength(200);
-            entity.Property(e => e.Cmnd)
+            entity.Property(e => e.CMND)
                 .HasMaxLength(20)
                 .HasColumnName("CMND");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");

@@ -78,20 +78,17 @@ window.initGenericDataTable = function (selector, config) {
     if (config.serverSide) {
         tableOptions.ajax = function (data, callback, settings) {
             if (window.blazorInstance) {
-                // console.log('📡 DataTables requesting server-side data:', data);
+                // V
                 window.blazorInstance.invokeMethodAsync('LoadServerSideData', data)
                     .then(result => {
-                        // console.log('✅ Server-side data received:', result);
-                        // DataTables expect: { draw, recordsTotal, recordsFiltered, data }
-                        // My C# PaginatedResponse provides: RecordsTotal, RecordsFiltered, Data (via Items)
-                        
                         // Chuyển đổi format dữ liệu nếu cần
                         var mappedData = [];
                         if (result && result.data) {
                             var columns = config.columns || [];
                             result.data.forEach(function (item) {
                                 var rowData = [];
-                                columns.forEach(function(col) {
+                                columns.forEach(function (col) {
+                                    // Vì khi JSON trả về có thể thay đổi kiểu chữ PascalCase từ C# sang camelCase trong JS cho nên cần kiểm tra cả 3 kiểu
                                     var val = item[col];
                                     if (val === undefined) {
                                         var lower = col.charAt(0).toLowerCase() + col.slice(1);
@@ -101,6 +98,21 @@ window.initGenericDataTable = function (selector, config) {
                                         var upper = col.charAt(0).toUpperCase() + col.slice(1);
                                         val = item[upper];
                                     }
+                                    if (val === undefined) {
+                                        var keys = Object.keys(item);
+                                        var matchKey = keys.find(k => k.toLowerCase() === col.toLowerCase());
+                                        if (matchKey) {
+                                            val = item[matchKey];
+                                        }
+                                    }
+                                    if (val === undefined) {
+                                        var upper = col.toUpperCase();
+                                        val = item[upper];
+                                    }
+                                    if (val === undefined) {
+                                        var lower = col.toLowerCase();
+                                        val = item[lower];
+                                    }
                                     
                                     // Xử lý renderers
                                     if (config.columnRenderers && config.columnRenderers[col]) {
@@ -109,7 +121,7 @@ window.initGenericDataTable = function (selector, config) {
                                         val = (val === 1 || val === "1") 
                                             ? '<span class="badge bg-success">Đang Hoạt động</span>' 
                                             : '<span class="badge bg-danger">Đã xóa</span>';
-                                    } else if (col.toLowerCase().includes('date') || col.toLowerCase().includes('at')) {
+                                    } else if (col.toLowerCase().includes('date') || col.toLowerCase().endsWith('at')) {
                                         val = formatDateTime(val);
                                     }
                                     rowData.push(val === undefined || val === null ? "" : val);
@@ -207,7 +219,8 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
                         val = (val === 1 || val === "1") 
                             ? '<span class="badge bg-success">Hoạt động</span>' 
                             : '<span class="badge bg-danger">Ngừng hoạt động</span>';
-                    } else if (col.toLowerCase().includes('date') || col.toLowerCase().includes('at')) {
+                    } 
+                    else if (col.toLowerCase().includes('date') || col.toLowerCase().endsWith('at')) {
                         val = formatDateTime(val);
                     }
                     
@@ -751,7 +764,7 @@ function bindRowActionEvents(rowNode) {
         e.stopPropagation();
         var groupId = $(this).data('id');
         if (groupId && window.blazorInstance) {
-            window.blazorInstance.invokeMethodAsync('EditGroup', groupId.toString())
+            window.blazorInstance.invokeMethodAsync('OpenEditModalById', groupId.toString())
                 .catch(function (err) { console.error('Error editing group:', err); });
         }
     });
@@ -763,17 +776,12 @@ function bindRowActionEvents(rowNode) {
         var groupId = $(this).data('id');
         var groupName = $(this).data('name') || 'Nhóm';
         if (groupId && window.blazorInstance) {
-            window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', groupId.toString(), groupName)
+            window.blazorInstance.invokeMethodAsync('OpenDeleteModalById', groupId.toString())
                 .catch(function (err) { });
         }
     });
 }
 
-// 
-
-// ==========================================
-// DESTROY
-// ==========================================
 
 // hủy datatable
 // hủy datatable chung
@@ -1058,13 +1066,12 @@ function getUserActionButtons(userId) {
 }
 
 // render group action
-window.getGroupActionButtons = function (item) {
-    var id = item.id || item.Id;
-    var name = item.name || item.Name;
+window.getGroupActionButtons = function (groupId) {
+    if (!groupId) return '';
     return `
         <div class="btn-group">
-            <button class="btn btn-primary btn-sm btn-edit-group" data-id="${id}" title="Sửa"><i class="feather icon-edit"></i></button>
-            <button class="btn btn-danger btn-sm btn-delete-group" data-id="${id}" data-name="${name}" title="Xóa"><i class="feather icon-trash-2"></i></button>
+            <button class="btn btn-primary btn-sm btn-edit-group" data-id="${groupId}" title="Sửa"><i class="feather icon-edit"></i></button>
+            <button class="btn btn-danger btn-sm btn-delete-group" data-id="${groupId}"  title="Xóa"><i class="feather icon-trash-2"></i></button>
         </div>
     `;
 };

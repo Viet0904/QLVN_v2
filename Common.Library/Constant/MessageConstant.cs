@@ -26,12 +26,17 @@ namespace Common.Library.Constant
         public static string DATA_NOT_FOUND = "Không tìm thấy dữ liệu!";
 
         public static string USERNAME_NOT_NULL = "Tên đăng nhập không được bỏ trống!";
+        public static string GROUP_NOT_NULL = "Nhóm người dùng không được bỏ trống!";
 
         public static string PASSWORD_NOT_NULL = "Mật khẩu không được bỏ trống!";
+
+        public static string PASSWORD_NOT_MATCH = "Mật khẩu không khớp!";
 
         public static string SYSTEM_NOT_NULL = "Đơn vị không được bỏ trống!";
 
         public static string USERNAME_PASSWORD_NOT_CORRECT = "Tên đăng nhập hoặc mật khẩu không đúng!";
+
+
 
        
 

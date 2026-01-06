@@ -3,7 +3,7 @@
 @using Common.Model.UsUser
 @using Common.Model.UsGroup
 @using Common.Model.Common
-
+@using Common.Library.Constant
 @using WebBlazor.Services
 @using WebBlazor.Components
 @using Microsoft.AspNetCore.Components.Forms
@@ -53,8 +53,11 @@
                                     <th>CMND</th>
                                     <th>Địa chỉ</th>
                                     <th>Ghi chú</th>
-                                    <th>Trạng thái</th>
+                                    @* <th>Trạng thái</th> *@
                                     <th>Ngày tạo</th>
+                                    <th>Người tạo</th>
+                                    <th>Ngày cập nhật</th>
+                                    <th>Người cập nhật</th>
                                     <th style="width: 120px;">Hành động</th>
                                 </tr>
                             </thead>
@@ -167,8 +170,12 @@
         new TableColumnConfig { Property = "CMND", DisplayName = "CMND", Width = "120px" },
         new TableColumnConfig { Property = "Address", DisplayName = "Địa chỉ", Width = "200px" },
         new TableColumnConfig { Property = "Note", DisplayName = "Ghi chú", Width = "150px" },
-        new TableColumnConfig { Property = "RowStatus", DisplayName = "Trạng thái", Width = "120px" },
-        new TableColumnConfig { Property = "CreatedAt", DisplayName = "Ngày tạo", Width = "150px" }
+
+        // new TableColumnConfig { Property = "RowStatus", DisplayName = "Trạng thái", Width = "120px" },
+        new TableColumnConfig { Property = "CreatedAt", DisplayName = "Ngày tạo", Width = "140px" }, 
+        new TableColumnConfig { Property = "CreatedName", DisplayName = "Người tạo", Width = "140px" },
+        new TableColumnConfig { Property = "UpdatedAt", DisplayName = "Ngày cập nhật", Width = "140px" },
+        new TableColumnConfig { Property = "UpdatedName", DisplayName = "Người cập nhật", Width = "140px" },
     };
 
     protected override async Task OnInitializedAsync()
@@ -244,14 +251,14 @@
         {
             paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
             sw.Stop();
-            Console.WriteLine($"[UserList] Data fetched in {sw.ElapsedMilliseconds}ms. Records: {paginatedUsers.TotalRecords}");
+            // Console.WriteLine($"[UserList] Data fetched in {sw.ElapsedMilliseconds}ms. Records: {paginatedUsers.TotalRecords}");
             
             await RefreshDataTable();
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error refreshing data: {ex.Message}");
+            // Console.WriteLine($"Error refreshing data: {ex.Message}");
         }
     }
 
@@ -275,7 +282,7 @@
         // Khi search, reset về trang 1
         paginationRequest.SearchTerm = term;
         paginationRequest.PageNumber = 1;
-        // Search trên backend hiện đã hỗ trợ search cả GroupName
+        
         await RefreshData();
     }
 
@@ -286,11 +293,7 @@
         public string? Width { get; set; }
     }
 
-    [JSInvokable("OpenAddModal")]
-    public async Task OpenAddModalFromJS()
-    {
-        await OpenAddModal();
-    }
+    
 
     // Load data với pagination
     private async Task LoadData()
@@ -305,8 +308,9 @@
     }
 
     #region Modal Operations
-
-    private async Task OpenAddModal()
+    // Hàm này được gọi từ JS var addBtnHtml
+    [JSInvokable("OpenAddModal")]
+    public async Task OpenAddModal()
     {
         isEditMode = false;
         await LoadGroups(); // Nạp groups lười khi mở modal
@@ -317,59 +321,54 @@
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
     }
 
-    private async Task OpenEditModal(UsUserViewModel user)
-    {
-        isEditMode = true;
-        await LoadGroups(); // Nạp groups lười khi mở modal
-        usUserFormModel = new UsUserFormModel
-        {
-            Id = user.Id,
-            Name = user.Name,
-            UserName = user.UserName,
-            GroupId = user.GroupId,
-            Email = user.Email,
-            Phone = user.Phone,
-            Gender = user.Gender,
-            CMND = user.CMND,
-            Address = user.Address,
-            Image = user.Image,
-            Note = user.Note,
-            RowStatus = user.RowStatus,
-            ChangePassword = false // Mặc định không đổi password
-        };
-        password = string.Empty;
-        confirmPassword = string.Empty;
-        StateHasChanged();
-        await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
-    }
-
+  
+    // Xử lý sự kiện mở modal sửa từ JS (DataTable) bằng userId, hàm này được gọi từ JS ở phần $row.find('.btn-edit-user') 
     [JSInvokable("OpenEditModalById")]
     public async Task OpenEditModalById(string userId)
     {
         var user = await UserService.GetUserByIdAsync(userId);
         if (user != null)
         {
-            await OpenEditModal(user);
+            isEditMode = true;
+            await LoadGroups(); // Nạp groups lười khi mở modal
+            usUserFormModel = new UsUserFormModel
+            {
+                Id = user.Id,
+                Name = user.Name,
+                UserName = user.UserName,
+                GroupId = user.GroupId,
+                Email = user.Email,
+                Phone = user.Phone,
+                Gender = user.Gender,
+                CMND = user.CMND,
+                Address = user.Address,
+                Image = user.Image,
+                Note = user.Note,
+                RowStatus = user.RowStatus,
+                ChangePassword = false // Mặc định không đổi password
+            };
+            password = string.Empty;
+            confirmPassword = string.Empty;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
         }
     }
 
+    // Xử lý sự kiện mở modal xóa từ JS (DataTable) bằng userId, hàm này được gọi từ JS ở phần $row.find('.btn-delete-user')
     [JSInvokable("OpenDeleteModalById")]
     public async Task OpenDeleteModalById(string userId)
     {
         var user = paginatedUsers.Items.FirstOrDefault(u => u.Id == userId);
         if (user != null)
         {
-            await OpenDeleteModal(user);
+            deleteUserId = user.Id;
+            deleteUserName = user.Name;
+            isDeleteModalVisible = true;
+            StateHasChanged();
         }
     }
 
-    private async Task OpenDeleteModal(UsUserViewModel user)
-    {
-        deleteUserId = user.Id;
-        deleteUserName = user.Name;
-        isDeleteModalVisible = true;
-        StateHasChanged();
-    }
+
 
     private async Task CloseModals()
     {
@@ -424,13 +423,13 @@
                 // Validation cho password khi tạo mới
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    await ShowNotification("error", "Vui lòng nhập mật khẩu!");
+                    await ShowNotification("error", MessageConstant.PASSWORD_NOT_NULL);
                     return;
                 }
 
                 if (password != confirmPassword)
                 {
-                    await ShowNotification("error", "Mật khẩu xác nhận không khớp!");
+                    await ShowNotification("error", MessageConstant.PASSWORD_NOT_MATCH);
                     return;
                 }
 
@@ -466,7 +465,8 @@
 
                     if (dataTableInitialized)
                     {
-                        await RefreshDataTable();
+                        // await RefreshDataTable();
+                        await RefreshData();
                         await JS.InvokeVoidAsync("addUserRowSmooth", $"#{tableId}", newUser.Id);
                     }
                     
@@ -498,13 +498,13 @@
                 {
                     if (string.IsNullOrWhiteSpace(password))
                     {
-                        await ShowNotification("error", "Vui lòng nhập mật khẩu mới!");
+                        await ShowNotification("error", MessageConstant.PASSWORD_NOT_NULL);
                         return;
                     }
 
                     if (password != confirmPassword)
                     {
-                        await ShowNotification("error", "Mật khẩu xác nhận không khớp!");
+                        await ShowNotification("error", MessageConstant.PASSWORD_NOT_MATCH);
                         return;
                     }
                 }
@@ -528,7 +528,8 @@
 
                     if (dataTableInitialized)
                     {
-                        await RefreshDataTable();
+                        // await RefreshDataTable();
+                        await RefreshData();
                         await JS.InvokeVoidAsync("updateUserRowSmooth", $"#{tableId}", updatedUserId);
                     }
                     
@@ -584,7 +585,8 @@
                 
                 if (dataTableInitialized)
                 {
-                    await RefreshDataTable();
+                    await RefreshData();
+                    // await RefreshDataTable();
                 }
                 
                 StateHasChanged();
@@ -603,7 +605,8 @@
             await ShowNotification("error", $"Lỗi khi xóa: {ex.Message}");
                 if (dataTableInitialized)
                 {
-                    await RefreshDataTable();
+                    // await RefreshDataTable();
+                await RefreshData();
                 }
         }
         finally
@@ -640,7 +643,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Notification error: {ex.Message}");
+            // Console.WriteLine($"Notification error: {ex.Message}");
         }
     }
 
