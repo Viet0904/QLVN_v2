@@ -12,7 +12,8 @@ window.initGenericDataTable = function (selector, config) {
 
     config = config || {};
     var columnNames = config.columnNames || [];
-    var scrollY = config.scrollY || 'calc(100vh - 320px)';
+    // Chỉnh sửa chiều cao scroll nếu được cấu hình
+    var scrollY = config.scrollY || 'calc(100vh - 220px)';
     
     // Xóa các dropdown cũ liên quan đến selector này
     $('.dt-column-dropdown[data-table="' + selector + '"]').remove();
@@ -70,8 +71,9 @@ window.initGenericDataTable = function (selector, config) {
                 createColumnMenu(column, header, index, api, selector);
             });
 
-            setTimeout(function () { api.columns.adjust(); }, 150);
+            setTimeout(function () { api.columns.adjust(); }, 200);
         }
+       
     };
 
     // Nếu cấu hình serverSide, xử lý ajax callback qua Blazor
@@ -173,14 +175,18 @@ window.initGenericDataTable = function (selector, config) {
 
     window.dataTableInstances[selector] = table;
     window.dataTableConfigs[selector] = config;
-    
+
+    // Lắng nghe sự kiện resize cửa sổ để chỉnh lại UI
+    $(window).on('resize', function () {
+        table.columns.adjust();
+    });
     // Sidebar Observer để auto resize
     setupSidebarToggleObserver(selector);
 
     return table;
 };
 
-// Cập nhật dữ liệu cho Generic DataTable
+// Cập nhật dữ liệu vào Table, 
 window.updateGenericDataTableData = function (selector, paginatedData) {
     //console.time('DataTableRender:' + selector);
     var table = window.dataTableInstances[selector];
@@ -250,7 +256,7 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
    
         setTimeout(function() {
             table.columns.adjust();
-        }, 50);
+        }, 100);
         if (config.bindEvents) {
             setTimeout(() => window[config.bindEvents](selector), 100);
         }

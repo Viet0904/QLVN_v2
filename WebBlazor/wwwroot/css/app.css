@@ -104,7 +104,7 @@ code {
 
 
 
-/* Notification ph?i n?m trên Modal */
+/* Notification  trên Modal */
 .custom-notification,
 [class*="growl"],
 .alert.growl-animated {
@@ -128,7 +128,7 @@ code {
 
 /* ============================================
    MENU ACTIVE STYLES - THEO TEMPLATE GỐC
-   CHÚ Ý: Không dùng !important để theme có thể override
+ 
    ============================================ */
 
 /* Active main menu item (Dashboard, menu cha) */
@@ -213,6 +213,5 @@ code {
 .theme-loader {
     pointer-events: none;
 }
-
 
 

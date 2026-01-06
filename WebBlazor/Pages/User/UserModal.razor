@@ -5,9 +5,46 @@
 @using WebBlazor.Services
 @inject UserApiClient UserApiClient
 @inject Microsoft.JSInterop.IJSRuntime JS
+<style>
+    /* Đảm bảo MudMenu chiếm đầy đủ width */
+    .mud-menu {
+        width: 100% !important;
+    }
 
+        .mud-menu .mud-button-root {
+            width: 100% !important;
+            justify-content: space-between !important;
+        }
+
+    /* Fix search input trong dropdown */
+    .group-search-input {
+        width: 100% !important;
+    }
+
+        .group-search-input .mud-input-root {
+            width: 100% !important;
+        }
+
+    /* Fix popover width */
+    .group-select-popover {
+        min-width: 300px !important;
+    }
+
+    /* Animation cho fade in */
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
 <!-- Add/Edit User Modal -->
-<div class="modal fade" id="userModal" tabindex="-1" role="dialog" data-backdrop="static" style="z-index: 1050;">
+<div class="modal fade" id="userModal"  role="dialog" data-backdrop="static" style="z-index: 1050;">
     <div class="modal-dialog modal-lg" role="document" style="max-width: 900px;">
         <div class="modal-content">
             <div class="modal-header">
@@ -108,40 +145,45 @@
                                         <ValidationMessage For="@(() => UserModel.UserName)" class="text-danger" />
                                     </div>
                                 </div>
+                                <!-- Tìm phần MudMenu trong form và thay thế bằng đoạn này -->
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Nhóm <span class="text-danger">*</span></label>
-                                        <div class="custom-select-container">
-                                            <MudMenu Label="@(_selectedGroup?.Name ?? "Chọn nhóm...")" 
-                                                    Variant="MudBlazor.Variant.Outlined" 
-                                                    EndIcon="@Icons.Material.Filled.ArrowDropDown"
-                                                    Style="width: 100%;" 
-                                                    FullWidth="true" 
-                                                    Dense="true"
-                                                    AnchorOrigin="Origin.BottomCenter"
-                                                    TransformOrigin="Origin.TopCenter"
-                                                    PopoverClass="group-select-popover">
-                                                <div class="pa-2" style="position: sticky; top: 0; background: white; z-index: 10;">
-                                                    <MudTextField T="string" @bind-Value="_groupSearchText" 
-                                                                  Placeholder="Tìm nhanh..." 
-                                                                  Immediate="true" 
-                                                                  OnKeyUp="@OnGroupSearchKeyUp" 
-                                                                  Adornment="Adornment.Start" 
-                                                                  AdornmentIcon="@Icons.Material.Filled.Search"
-                                                                  Margin="MudBlazor.Margin.Dense" />
-                                                </div>
-                                                <div style="height: 300px; overflow-y: auto;">
-                                                    <Virtualize @ref="_virtualizeComponent" ItemsProvider="LoadGroupsVirtualized" Context="group">
-                                                        <MudMenuItem OnClick="@(() => OnGroupSelected(group))">
-                                                            @group.Name (@group.Id)
-                                                        </MudMenuItem>
-                                                    </Virtualize>
-                                                </div>
-                                            </MudMenu>
-                                        </div>
+                                        <MudMenu Label="@(_selectedGroup?.Name ?? "Chọn nhóm...")"
+                                                 Variant="MudBlazor.Variant.Outlined"
+                                                 EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                                                 Style="width: 100%;"
+                                                 FullWidth="true"
+                                                 Dense="true"
+                                                 AnchorOrigin="Origin.BottomCenter"
+                                                 TransformOrigin="Origin.TopCenter"
+                                                 PopoverClass="group-select-popover"
+                                                 MaxHeight="400">
+                                            <div class="pa-2" style="position: sticky; top: 0; background: white; z-index: 10; border-bottom: 1px solid #e0e0e0;">
+                                                <MudTextField T="string" @bind-Value="_groupSearchText"
+                                                              Placeholder="Tìm nhanh..."
+                                                              Immediate="true"
+                                                              OnKeyUp="@OnGroupSearchKeyUp"
+                                                              @onclick:stopPropagation="true"
+                                                              @onmousedown:stopPropagation="true"
+                                                              Adornment="Adornment.Start"
+                                                              AdornmentIcon="@Icons.Material.Filled.Search"
+                                                              Margin="MudBlazor.Margin.Dense"
+                                                              Class="group-search-input" />
+                                            </div>
+                                            <div style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                                                <Virtualize @ref="_virtualizeComponent" ItemsProvider="LoadGroupsVirtualized" Context="group">
+                                                    <MudMenuItem OnClick="@(() => OnGroupSelected(group))" Style="white-space: normal; word-wrap: break-word;">
+                                                        @group.Name (@group.Id)
+                                                    </MudMenuItem>
+                                                </Virtualize>
+                                            </div>
+                                        </MudMenu>
                                         <ValidationMessage For="@(() => UserModel.GroupId)" class="text-danger" />
                                     </div>
                                 </div>
+
+                                
                             </div>
 
                             <!-- TRẠNG THÁI -->

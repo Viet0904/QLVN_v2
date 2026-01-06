@@ -195,29 +195,133 @@ namespace Common.Service
             }
         }
         // Lấy danh sách người dùng theo phân trang
+        //public async Task<PaginatedResponse<UsUserViewModel>> GetPaginated(PaginatedRequest request)
+        //{
+        //    // Sử dụng IQueryable để query trực tiếp tại DB, tránh load toàn bộ vào RAM
+        //    // Thêm AsNoTracking để tăng tốc độ thực thi
+        //    var query = DbContext.UsUsers.AsNoTracking()
+        //        .Where(x => x.RowStatus == RowStatusConstant.Active);
+
+        //    // Search nâng cao: Tìm kiếm trên cả User và tên Group
+        //    if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        //    {
+        //        var searchLower = request.SearchTerm.ToLower();
+        //        query = query.Where(u =>
+        //            (u.Id != null && u.Id.Contains(searchLower)) ||
+        //            (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
+        //            (u.UserName != null && u.UserName.ToLower().Contains(searchLower)) ||
+        //            (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
+        //            (u.Phone != null && u.Phone.ToLower().Contains(searchLower)) ||
+        //            (u.Group.Name != null && u.Group.Name.ToLower().Contains(searchLower)) // Search trực tiếp trên bảng Join
+
+        //        );
+        //    }
+
+        //    // Sorting
+        //    query = request.SortColumn?.ToLower() switch
+        //    {
+        //        "id" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Id) : query.OrderBy(u => u.Id),
+        //        "name" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
+        //        "username" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UserName) : query.OrderBy(u => u.UserName),
+        //        "email" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
+        //        "groupname" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Group.Name) : query.OrderBy(u => u.Group.Name),
+        //        "createdat" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+        //        "createdby" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.CreatedBy) : query.OrderBy(u => u.CreatedBy),
+        //        "updatedat" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UpdatedAt) : query.OrderBy(u => u.UpdatedAt),
+        //        "updatedby" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UpdatedBy) : query.OrderBy(u => u.UpdatedBy),
+        //        "GroupId" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.GroupId) : query.OrderBy(u => u.GroupId),
+
+
+        //        _ => query.OrderByDescending(u => u.CreatedAt)
+        //    };
+
+        //    var totalRecords = await query.CountAsync();
+
+        //    // Projection: Chỉ lấy những gì cần thiết nhất để giảm tải (bỏ qua Image lớn)
+        //    var items = await query
+        //        .Skip((request.PageNumber - 1) * request.PageSize)
+        //        .Take(request.PageSize)
+        //        .Select(u => new UsUserViewModel
+        //        {
+        //            Id = u.Id,
+        //            Name = u.Name,
+        //            UserName = u.UserName,
+        //            Email = u.Email,
+        //            Phone = u.Phone,
+        //            CMND = u.CMND,
+        //            Address = u.Address,
+        //            Note = u.Note,
+        //            Gender = u.Gender,
+        //            GroupId = u.GroupId,
+        //            GroupName = u.Group.Name, // EF Core tự động sinh INNER JOIN cực tối ưu
+        //            RowStatus = u.RowStatus,
+        //            CreatedAt = u.CreatedAt,
+        //            CreatedBy = u.CreatedBy,
+        //            UpdatedBy = u.UpdatedBy,
+        //            UpdatedAt = u.UpdatedAt
+        //        })
+        //        .ToListAsync();
+
+        //    // Xử lý mapping tên người tạo/sửa (Vẫn giữ logic tối ưu này)
+        //    if (items.Any())
+        //    {
+
+        //        // Lấy ra danh sách userId duy nhất từ CreatedBy và UpdatedBy
+        //        var userIds = items.SelectMany(u => new[] { u.CreatedBy, u.UpdatedBy })
+        //                           .Where(id => !string.IsNullOrEmpty(id))
+        //                           .Distinct()
+        //                           .ToList();
+        //        // Lấy tên người dùng từ bảng UsUsers dựa trên danh sách userId
+        //        if (userIds.Any())
+        //        {
+        //            // Tạo dictionary để tra cứu nhanh
+        //            var userNames = await DbContext.UsUsers.AsNoTracking()
+        //                                   .Where(u => userIds.Contains(u.Id))
+        //                                   .Select(u => new { u.Id, u.Name })
+        //                                   .ToDictionaryAsync(u => u.Id, u => u.Name);
+
+
+        //            // Gán tên người tạo và người cập nhật vào từng item
+        //            foreach (var item in items)
+        //            {
+        //                if (!string.IsNullOrEmpty(item.CreatedBy) && userNames.TryGetValue(item.CreatedBy, out var cName))
+        //                    item.CreatedName = cName;
+
+        //                if (!string.IsNullOrEmpty(item.UpdatedBy) && userNames.TryGetValue(item.UpdatedBy, out var uName))
+        //                    item.UpdatedName = uName;
+        //            }
+        //        }
+        //    }
+
+        //    return new PaginatedResponse<UsUserViewModel>
+        //    {
+        //        Items = items,
+        //        TotalRecords = totalRecords,
+        //        PageNumber = request.PageNumber,
+        //        PageSize = request.PageSize
+        //    };
+        //}
         public async Task<PaginatedResponse<UsUserViewModel>> GetPaginated(PaginatedRequest request)
         {
-            // Sử dụng IQueryable để query trực tiếp tại DB, tránh load toàn bộ vào RAM
-            // Thêm AsNoTracking để tăng tốc độ thực thi
+            // 1. Khởi tạo query với AsNoTracking để tối ưu hiệu năng đọc
             var query = DbContext.UsUsers.AsNoTracking()
                 .Where(x => x.RowStatus == RowStatusConstant.Active);
 
-            // Search nâng cao: Tìm kiếm trên cả User và tên Group
+            // 2. Search nâng cao
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
-                var searchLower = request.SearchTerm.ToLower();
+                var searchLower = request.SearchTerm.Trim().ToLower();
                 query = query.Where(u =>
                     (u.Id != null && u.Id.Contains(searchLower)) ||
                     (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
                     (u.UserName != null && u.UserName.ToLower().Contains(searchLower)) ||
                     (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
                     (u.Phone != null && u.Phone.ToLower().Contains(searchLower)) ||
-                    (u.Group.Name != null && u.Group.Name.ToLower().Contains(searchLower)) // Search trực tiếp trên bảng Join
-
+                    (u.Group.Name != null && u.Group.Name.ToLower().Contains(searchLower))
                 );
             }
 
-            // Sorting
+            // 3. Sorting (Sử dụng switch expression - C# 8.0+)
             query = request.SortColumn?.ToLower() switch
             {
                 "id" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Id) : query.OrderBy(u => u.Id),
@@ -226,18 +330,15 @@ namespace Common.Service
                 "email" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
                 "groupname" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.Group.Name) : query.OrderBy(u => u.Group.Name),
                 "createdat" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
-                "createdby" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.CreatedBy) : query.OrderBy(u => u.CreatedBy),
                 "updatedat" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UpdatedAt) : query.OrderBy(u => u.UpdatedAt),
-                "updatedby" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.UpdatedBy) : query.OrderBy(u => u.UpdatedBy),
-                "GroupId" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.GroupId) : query.OrderBy(u => u.GroupId),
-                    
-
-                _ => query.OrderByDescending(u => u.CreatedAt)
+                "groupid" => request.SortDirection == "desc" ? query.OrderByDescending(u => u.GroupId) : query.OrderBy(u => u.GroupId),
+                _ => query.OrderByDescending(u => u.CreatedAt) // Mặc định sắp xếp theo ngày tạo mới nhất
             };
 
+            // 4. Lấy tổng số bản ghi trước khi phân trang
             var totalRecords = await query.CountAsync();
 
-            // Projection: Chỉ lấy những gì cần thiết nhất để giảm tải (bỏ qua Image lớn)
+            // 5. Projection & Pagination
             var items = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
@@ -253,7 +354,7 @@ namespace Common.Service
                     Note = u.Note,
                     Gender = u.Gender,
                     GroupId = u.GroupId,
-                    GroupName = u.Group.Name, // EF Core tự động sinh INNER JOIN cực tối ưu
+                    GroupName = u.Group != null ? u.Group.Name : string.Empty,
                     RowStatus = u.RowStatus,
                     CreatedAt = u.CreatedAt,
                     CreatedBy = u.CreatedBy,
@@ -262,37 +363,41 @@ namespace Common.Service
                 })
                 .ToListAsync();
 
-            // Xử lý mapping tên người tạo/sửa (Vẫn giữ logic tối ưu này)
-            if (items.Any())
-            {
+            // 6. Xử lý Batch Mapping cho CreatedName và UpdatedName
+            //if (items.Count != 0)
+            //{
+            //    // Gom tất cả ID người tạo và người sửa vào 1 HashSet để lọc trùng và loại bỏ null
+            //    var userIdsForLookup = items.Select(u => u.CreatedBy)
+            //        .Concat(items.Select(u => u.UpdatedBy))
+            //        .Where(id => !string.IsNullOrEmpty(id))
+            //        .Distinct()
+            //        .ToList();
 
-                // Lấy ra danh sách userId duy nhất từ CreatedBy và UpdatedBy
-                var userIds = items.SelectMany(u => new[] { u.CreatedBy, u.UpdatedBy })
-                                   .Where(id => !string.IsNullOrEmpty(id))
-                                   .Distinct()
-                                   .ToList();
-                // Lấy tên người dùng từ bảng UsUsers dựa trên danh sách userId
-                if (userIds.Any())
-                {
-                    // Tạo dictionary để tra cứu nhanh
-                    var userNames = await DbContext.UsUsers.AsNoTracking()
-                                           .Where(u => userIds.Contains(u.Id))
-                                           .Select(u => new { u.Id, u.Name })
-                                           .ToDictionaryAsync(u => u.Id, u => u.Name);
+            //    if (userIdsForLookup.Count != 0)
+            //    {
+            //        // Truy vấn 1 lần duy nhất để lấy Name mapping với ID
+            //        var userNamesDict = await DbContext.UsUsers.AsNoTracking()
+            //            .Where(u => userIdsForLookup.Contains(u.Id))
+            //            .Select(u => new { u.Id, u.Name })
+            //            .ToDictionaryAsync(u => u.Id, u => u.Name);
 
+                    
+            //        foreach (var item in items)
+            //        {
+            //            if (!string.IsNullOrEmpty(item.CreatedBy) && userNamesDict.TryGetValue(item.CreatedBy, out var createdName))
+            //            {
+            //                item.CreatedName = createdName;
+            //            }
 
-                    // Gán tên người tạo và người cập nhật vào từng item
-                    foreach (var item in items)
-                    {
-                        if (!string.IsNullOrEmpty(item.CreatedBy) && userNames.TryGetValue(item.CreatedBy, out var cName))
-                            item.CreatedName = cName;
-                        
-                        if (!string.IsNullOrEmpty(item.UpdatedBy) && userNames.TryGetValue(item.UpdatedBy, out var uName))
-                            item.UpdatedName = uName;
-                    }
-                }
-            }
+            //            if (!string.IsNullOrEmpty(item.UpdatedBy) && userNamesDict.TryGetValue(item.UpdatedBy, out var updatedName))
+            //            {
+            //                item.UpdatedName = updatedName;
+            //            }
+            //        }
+            //    }
+            //}
 
+            // 7. Trả về kết quả
             return new PaginatedResponse<UsUserViewModel>
             {
                 Items = items,
