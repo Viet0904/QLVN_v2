@@ -504,15 +504,26 @@ table.dataTable tbody tr.selected:hover {
     -webkit-overflow-scrolling: touch;
 }*/
 
-/*  Đồng bộ width header/body khi dùng scrollX/Y */ 
-
-div.dataTables_scrollHeadInner,
-div.dataTables_scrollHeadInner table {
+/* Đảm bảo table luôn chiếm 100% chiều rộng container */
+.dataTables_wrapper table {
     width: 100% !important;
+    margin: 0 !important;
+    border-collapse: collapse !important;
 }
 
-div.dataTables_scrollBody table {
+/* Fix lỗi lệch header khi có scrollbar */
+.dataTables_scrollHeadInner {
     width: 100% !important;
+    padding-right: 0 !important;
+}
+
+    .dataTables_scrollHeadInner table {
+        width: 100% !important;
+    }
+
+/* Đồng bộ padding giữa header và body */
+.table th, .table td {
+    white-space: nowrap; /* Tránh việc text tự xuống hàng làm lệch row height */
 }
 
 
@@ -554,7 +565,7 @@ div.dataTables_scrollBody table {
         max-width: 100% !important;
     }
     
-    /* Pagination info cho mobile */
+     Pagination info cho mobile 
     .dt-custom-pagination {
         flex-direction: column !important;
         align-items: center !important;
@@ -578,7 +589,7 @@ div.dataTables_scrollBody table {
         font-size: 14px !important;
     }
     
-    /* Table adjustments cho mobile */
+     Table adjustments cho mobile 
     table.dataTable {
         font-size: 13px !important;
     }
@@ -610,7 +621,7 @@ div.dataTables_scrollBody table {
     }
     
     .dt-scroll-body {
-        max-height: calc(100vh - 350px) !important;
+        max-height: calc(100vh - 220px) !important;
         height: auto !important;
     }
 }
@@ -618,8 +629,8 @@ div.dataTables_scrollBody table {
 /* DESKTOP - từ 992px trở lên */
 @media (min-width: 992px) {
     .dt-scroll-body {
-        max-height: calc(100vh - 320px) !important;
-        height: auto !important;
+        max-height: calc(100vh - 220px) !important;
+/*        height: auto !important;*/
     }
 }
 

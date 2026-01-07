@@ -16,35 +16,41 @@
             <!-- Navigation Section -->
             <div class="pcoded-navigatio-lavel">Navigation</div>
             <ul class="pcoded-item pcoded-left-item">
-                <li class="@(IsActive("") || IsActive("dashboard") ? "active" : "")">
-                    <a href="/">
+                <li class="@(IsActive("") || IsActive("dashboard") ? "active" : "")"
+                    @onclick:stopPropagation="true">
+                    <NavLink href="/" Match="NavLinkMatch.All">
                         <span class="pcoded-micon"><i class="feather icon-home"></i></span>
                         <span class="pcoded-mtext">Dashboard</span>
-                    </a>
+                    </NavLink>
                 </li>
             </ul>
 
             @foreach (var parentMenu in GetParentMenus())
             {
                 var children = GetChildMenus(parentMenu.Name);
-                
+
                 if (children.Any())
                 {
                     <!-- Section với dropdown -->
                     <div class="pcoded-navigatio-lavel">@parentMenu.Note</div>
                     <ul class="pcoded-item pcoded-left-item">
-                        <li class="pcoded-hasmenu @(IsMenuOrChildActive(parentMenu.Name) ? "active" : "") @(IsExpanded(parentMenu.Name) ? "pcoded-trigger" : "")">
-                            <a href="javascript:void(0)" @onclick="() => ToggleMenu(parentMenu.Name)">
+                        <li class="pcoded-hasmenu @(IsMenuOrChildActive(parentMenu.Name) ? "active" : "") @(IsExpanded(parentMenu.Name) ? "pcoded-trigger" : "")"
+                            @onclick:stopPropagation="true">
+                            <a href="javascript:void(0)"
+                               @onclick="() => ToggleMenu(parentMenu.Name)"
+                               @onclick:preventDefault="true"
+                               @onclick:stopPropagation="true">
                                 <span class="pcoded-micon"><i class="@parentMenu.Icon"></i></span>
                                 <span class="pcoded-mtext">@parentMenu.Note</span>
                             </a>
                             <ul class="pcoded-submenu">
                                 @foreach (var child in children)
                                 {
-                                    <li class="@(IsActive(child.Name) ? "active" : "")">
-                                        <a href="/@child.Name">
+                                    <li class="@(IsActive(child.Name) ? "active" : "")"
+                                        @onclick:stopPropagation="true">
+                                        <NavLink href="@($"/{child.Name}")">
                                             <span class="pcoded-mtext">@child.Note</span>
-                                        </a>
+                                        </NavLink>
                                     </li>
                                 }
                             </ul>
@@ -56,11 +62,12 @@
                     <!-- Section không có dropdown -->
                     <div class="pcoded-navigatio-lavel">@parentMenu.Note</div>
                     <ul class="pcoded-item pcoded-left-item">
-                        <li class="@(IsActive(parentMenu.Name) ? "active" : "")">
-                            <a href="/@parentMenu.Name">
+                        <li class="@(IsActive(parentMenu.Name) ? "active" : "")"
+                            @onclick:stopPropagation="true">
+                            <NavLink href="@($"/{parentMenu.Name}")">
                                 <span class="pcoded-micon"><i class="@parentMenu.Icon"></i></span>
                                 <span class="pcoded-mtext">@parentMenu.Note</span>
-                            </a>
+                            </NavLink>
                         </li>
                     </ul>
                 }
@@ -117,7 +124,6 @@
         }
     }
 
-    // Lấy parent menus (không có ParentMenu hoặc ParentMenu = NULL)
     private List<Common.Model.SysMenu.SysMenuViewModel> GetParentMenus()
     {
         return allMenus
@@ -126,11 +132,10 @@
             .ToList();
     }
 
-    // Lấy child menus của 1 parent
     private List<Common.Model.SysMenu.SysMenuViewModel> GetChildMenus(string parentName)
     {
         if (string.IsNullOrEmpty(parentName)) return new List<Common.Model.SysMenu.SysMenuViewModel>();
-        
+
         return allMenus
             .Where(m => !string.IsNullOrEmpty(m.ParentMenu) && m.ParentMenu.Equals(parentName, StringComparison.OrdinalIgnoreCase))
             .OrderBy(m => m.Name)
@@ -145,7 +150,7 @@
     private bool IsMenuOrChildActive(string menuName)
     {
         if (IsActive(menuName)) return true;
-        
+
         var childMenus = GetChildMenus(menuName);
         return childMenus.Any(child => IsActive(child.Name));
     }
@@ -163,8 +168,6 @@
         }
         else
         {
-            // Optional: Close others if desired (accordion style)
-            // expandedMenus.Clear(); 
             expandedMenus.Add(menuName);
         }
     }

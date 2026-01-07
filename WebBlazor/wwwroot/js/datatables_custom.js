@@ -28,6 +28,7 @@ window.initGenericDataTable = function (selector, config) {
     // console.log('🚀 Initializing GenericDataTable:', selector, config);
     if ($.fn.DataTable.isDataTable(selector)) {
         $(selector).DataTable().destroy();
+        $(selector).empty(); // Xóa sạch để tránh dư thừa DOM
     }
 
     config = config || {};
@@ -46,9 +47,9 @@ window.initGenericDataTable = function (selector, config) {
         paging: config.paging !== undefined ? config.paging : true, // Bật paging mặc định của DataTables
         lengthChange: false,
         scrollY: scrollY,
-        //scrollX: true,
+        scrollX: true,
         scrollCollapse: true,
-        autoWidth: false,
+        autoWidth: true,
         deferRender: true, // Chỉ render những hàng thực sự hiển thị
         serverSide: config.serverSide || false,
         processing: config.serverSide || false,
@@ -266,7 +267,10 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
 
         table.draw(false);
 
-        table.columns.adjust();
+        // FIX CHÍNH Ở ĐÂY: Sử dụng setTimeout để đảm bảo DOM đã render xong dữ liệu mới adjust
+        setTimeout(function () {
+            table.columns.adjust();
+        }, 150);
 
     } catch (e) {
         
