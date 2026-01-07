@@ -26,7 +26,7 @@ window.initGenericDataTable = function (selector, config) {
         paging: config.paging !== undefined ? config.paging : true, // Bật paging mặc định của DataTables
         lengthChange: false,
         scrollY: scrollY,
-        //scrollX: true,
+        scrollX: true,
         scrollCollapse: true,
         autoWidth: false,
         deferRender: true, // Chỉ render những hàng thực sự hiển thị
@@ -56,6 +56,10 @@ window.initGenericDataTable = function (selector, config) {
                     window[config.bindEvents](selector);
                 }
             }, 50);
+
+            // Adjust columns on every draw to fix alignment issues
+            var api = this.api();
+            setTimeout(function () { api.columns.adjust(); }, 150);
         },
         initComplete: function () {
             var api = this.api();
@@ -219,6 +223,14 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
                         var upper = col.charAt(0).toUpperCase() + col.slice(1);
                         val = item[upper];
                     }
+
+                    if (val === undefined) {
+                        var keys = Object.keys(item);
+                        var matchKey = keys.find(k => k.toLowerCase() === col.toLowerCase());
+                        if (matchKey) {
+                            val = item[matchKey];
+                        }
+                    }
                     
                     // Xử lý các kiểu hiển thị đặc biệt
                     if (config.columnRenderers && config.columnRenderers[col]) {
@@ -228,7 +240,7 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
                             ? '<span class="badge bg-success">Hoạt động</span>' 
                             : '<span class="badge bg-danger">Ngừng hoạt động</span>';
                     } 
-                    else if (col.toLowerCase().includes('date') || col.toLowerCase().endsWith('at')) {
+                    else if ((col.toLowerCase().includes('date') && !col.toLowerCase().includes('updatedby') && !col.toLowerCase().includes('createdby')) || col.toLowerCase().endsWith('at')) {
                         val = formatDateTime(val);
                     }
                     
@@ -255,6 +267,7 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
         }
 
         table.draw(false);
+        table.columns.adjust();
     } catch (e) {
         
     } finally {
