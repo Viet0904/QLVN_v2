@@ -1,4 +1,5 @@
-﻿html, body {
+﻿@import url('datatables-custom.css');
+html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -213,5 +214,3 @@ code {
 .theme-loader {
     pointer-events: none;
 }
-
-

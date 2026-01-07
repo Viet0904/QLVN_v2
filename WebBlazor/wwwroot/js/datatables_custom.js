@@ -26,7 +26,7 @@ window.initGenericDataTable = function (selector, config) {
         paging: config.paging !== undefined ? config.paging : true, // Bật paging mặc định của DataTables
         lengthChange: false,
         scrollY: scrollY,
-        scrollX: true,
+        //scrollX: true,
         scrollCollapse: true,
         autoWidth: false,
         deferRender: true, // Chỉ render những hàng thực sự hiển thị
@@ -71,7 +71,7 @@ window.initGenericDataTable = function (selector, config) {
                 createColumnMenu(column, header, index, api, selector);
             });
 
-            setTimeout(function () { api.columns.adjust(); }, 200);
+            setTimeout(function () { api.columns.adjust(); }, 150);
         }
        
     };
@@ -89,6 +89,8 @@ window.initGenericDataTable = function (selector, config) {
                             var columns = config.columns || [];
                             result.data.forEach(function (item) {
                                 var rowData = [];
+                                console.log('Processing item:', item);
+                                console.log('Using columns:', columns);
                                 columns.forEach(function (col) {
                                     // Vì khi JSON trả về có thể thay đổi kiểu chữ PascalCase từ C# sang camelCase trong JS cho nên cần kiểm tra cả 3 kiểu
                                     var val = item[col];
@@ -253,13 +255,6 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
         }
 
         table.draw(false);
-   
-        setTimeout(function() {
-            table.columns.adjust();
-        }, 100);
-        if (config.bindEvents) {
-            setTimeout(() => window[config.bindEvents](selector), 100);
-        }
     } catch (e) {
         
     } finally {
@@ -351,7 +346,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns, config) {
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                        z-index: 9999;
+                        z-index: 2000;
                         min-width: 240px;
                         max-height: 400px;
                         overflow-y: auto;
