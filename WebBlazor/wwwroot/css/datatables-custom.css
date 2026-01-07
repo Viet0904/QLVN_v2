@@ -498,11 +498,23 @@ table.dataTable tbody tr.selected:hover {
    ========================================== */
 
 /* Base table responsive wrapper */
-.table-responsive {
+/*.table-responsive {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}*/
+
+/*  Đồng bộ width header/body khi dùng scrollX/Y */ 
+
+div.dataTables_scrollHeadInner,
+div.dataTables_scrollHeadInner table {
+    width: 100% !important;
 }
+
+div.dataTables_scrollBody table {
+    width: 100% !important;
+}
+
 
 /* DataTable scrolling container */
 .dt-scroll {

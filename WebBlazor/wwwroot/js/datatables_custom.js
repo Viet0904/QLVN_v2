@@ -2,6 +2,26 @@
 window.dataTableConfigs = {};
 window.selectedRows = {};
 window.blazorInstance = null;
+const DATE_COLUMNS = ["CreatedAt", "UpdatedAt"];
+
+// Hàm dùng để lấy value không phân biệt hoa thường, cho các API đổ giá trị vào Table bên TableColumnConfig
+function getValueIgnoreCase(obj, key) {
+    if (!obj || !key) return null;
+
+    // match trực tiếp
+    if (obj[key] !== undefined) return obj[key];
+
+    const lowerKey = key.toLowerCase();
+
+    // tìm key không phân biệt hoa thường
+    for (const k in obj) {
+        if (k.toLowerCase() === lowerKey) {
+            return obj[k];
+        }
+    }
+    return null;
+}
+
 
 // Khởi tạo DataTable chung cho tất cả các trang
 window.initGenericDataTable = function (selector, config) {
@@ -14,7 +34,7 @@ window.initGenericDataTable = function (selector, config) {
     var columnNames = config.columnNames || [];
     // Chỉnh sửa chiều cao scroll nếu được cấu hình
     var scrollY = config.scrollY || 'calc(100vh - 220px)';
-    
+
     // Xóa các dropdown cũ liên quan đến selector này
     $('.dt-column-dropdown[data-table="' + selector + '"]').remove();
 
@@ -73,7 +93,7 @@ window.initGenericDataTable = function (selector, config) {
 
             setTimeout(function () { api.columns.adjust(); }, 150);
         }
-       
+
     };
 
     // Nếu cấu hình serverSide, xử lý ajax callback qua Blazor
@@ -92,44 +112,31 @@ window.initGenericDataTable = function (selector, config) {
                                 console.log('Processing item:', item);
                                 console.log('Using columns:', columns);
                                 columns.forEach(function (col) {
-                                    // Vì khi JSON trả về có thể thay đổi kiểu chữ PascalCase từ C# sang camelCase trong JS cho nên cần kiểm tra cả 3 kiểu
-                                    var val = item[col];
-                                    if (val === undefined) {
-                                        var lower = col.charAt(0).toLowerCase() + col.slice(1);
-                                        val = item[lower];
-                                    }
-                                    if (val === undefined) {
-                                        var upper = col.charAt(0).toUpperCase() + col.slice(1);
-                                        val = item[upper];
-                                    }
-                                    if (val === undefined) {
-                                        var keys = Object.keys(item);
-                                        var matchKey = keys.find(k => k.toLowerCase() === col.toLowerCase());
-                                        if (matchKey) {
-                                            val = item[matchKey];
-                                        }
-                                    }
-                                    if (val === undefined) {
-                                        var upper = col.toUpperCase();
-                                        val = item[upper];
-                                    }
-                                    if (val === undefined) {
-                                        var lower = col.toLowerCase();
-                                        val = item[lower];
-                                    }
-                                    
-                                    // Xử lý renderers
+                                    // 1) lấy value không phân biệt hoa thường
+                                    let val = getValueIgnoreCase(item, col);
+
+                                    // 2) renderers / rowStatus giữ nguyên logic
                                     if (config.columnRenderers && config.columnRenderers[col]) {
                                         val = window[config.columnRenderers[col]](val, item);
                                     } else if (col.toLowerCase() === 'rowstatus') {
-                                        val = (val === 1 || val === "1") 
-                                            ? '<span class="badge bg-success">Đang Hoạt động</span>' 
+                                        val = (val === 1 || val === "1")
+                                            ? '<span class="badge bg-success">Đang Hoạt động</span>'
                                             : '<span class="badge bg-danger">Đã xóa</span>';
-                                    } else if (col.toLowerCase().includes('date') || col.toLowerCase().endsWith('at')) {
-                                        val = formatDateTime(val);
+                                    } else {
+                                        // 3) format date: chỉ theo whitelist
+                                        const dateCols = (config.dateColumns && Array.isArray(config.dateColumns))
+                                            ? config.dateColumns
+                                            : DATE_COLUMNS;
+
+                                        if (dateCols.some(dc => dc.toLowerCase() === col.toLowerCase())) {
+                                            val = val ? formatDateTime(val) : "";
+                                        }
                                     }
+
+                                    // 4) push vào rowData 
                                     rowData.push(val === undefined || val === null ? "" : val);
                                 });
+
 
                                 if (config.actionRenderer) {
                                     rowData.push(window[config.actionRenderer](item.id || item.Id || item));
@@ -193,6 +200,8 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
     //console.time('DataTableRender:' + selector);
     var table = window.dataTableInstances[selector];
     if (!table) return;
+    console.log("First item keys:", paginatedData?.items?.[0] && Object.keys(paginatedData.items[0]));
+    console.log("First item:", paginatedData?.items?.[0]);
 
     try {
         var config = window.dataTableConfigs[selector] || {};
@@ -209,31 +218,32 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
             var columns = config.columns || [];
             paginatedData.items.forEach(function (item) {
                 var rowData = [];
-                columns.forEach(function(col) {
-                    var val = item[col];
-                    if (val === undefined) {
-                        var lower = col.charAt(0).toLowerCase() + col.slice(1);
-                        val = item[lower];
-                    }
-                    if (val === undefined) {
-                        var upper = col.charAt(0).toUpperCase() + col.slice(1);
-                        val = item[upper];
-                    }
-                    
-                    // Xử lý các kiểu hiển thị đặc biệt
+                columns.forEach(function (col) {
+                    // 1) lấy value không phân biệt hoa thường
+                    let val = getValueIgnoreCase(item, col);
+
+                    // 2) renderers / rowStatus 
                     if (config.columnRenderers && config.columnRenderers[col]) {
                         val = window[config.columnRenderers[col]](val, item);
                     } else if (col.toLowerCase() === 'rowstatus') {
-                        val = (val === 1 || val === "1") 
-                            ? '<span class="badge bg-success">Hoạt động</span>' 
-                            : '<span class="badge bg-danger">Ngừng hoạt động</span>';
-                    } 
-                    else if (col.toLowerCase().includes('date') || col.toLowerCase().endsWith('at')) {
-                        val = formatDateTime(val);
+                        val = (val === 1 || val === "1")
+                            ? '<span class="badge bg-success">Đang Hoạt động</span>'
+                            : '<span class="badge bg-danger">Đã xóa</span>';
+                    } else {
+                        // 3) format date: chỉ theo whitelist
+                        const dateCols = (config.dateColumns && Array.isArray(config.dateColumns))
+                            ? config.dateColumns
+                            : DATE_COLUMNS;
+
+                        if (dateCols.some(dc => dc.toLowerCase() === col.toLowerCase())) {
+                            val = val ? formatDateTime(val) : "";
+                        }
                     }
-                    
+
+                    // 4) push vào rowData 
                     rowData.push(val === undefined || val === null ? "" : val);
                 });
+
 
                 // Add Actions column if configured
                 if (config.actionRenderer) {
@@ -255,6 +265,9 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
         }
 
         table.draw(false);
+
+        table.columns.adjust();
+
     } catch (e) {
         
     } finally {
