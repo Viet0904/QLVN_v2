@@ -410,9 +410,12 @@
                 await JS.InvokeVoidAsync("adminAssetManager.loadScript", "js/analytic-dashboard.min.js");
 
                 // Reload layout scripts
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
+                // await JS.InvokeVoidAsync( "$.getScript('js/pcoded.min.js')");
+                // await JS.InvokeVoidAsync("$.getScript('js/vartical-layout.min.js')");
+                // await JS.InvokeVoidAsync( "$.getScript('js/script.js')");
+                // ✅ Load tuần tự bằng await
+               
+                await JS.InvokeVoidAsync("adminAssetManager.initAdminLayout");
                 
                 // Tắt loader sau khi init xong
 
@@ -425,4 +428,6 @@
             }
         }
     }
+
 }
+

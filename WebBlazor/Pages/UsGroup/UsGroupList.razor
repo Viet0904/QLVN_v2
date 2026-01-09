@@ -185,11 +185,8 @@
 
                
             }
-             // Reload layout scripts
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
-                await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
-            await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+            await JS.InvokeVoidAsync("adminAssetManager.initAdminLayout");
+      
         }
     }
 

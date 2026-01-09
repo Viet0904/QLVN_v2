@@ -197,14 +197,10 @@
             layoutInitialized = true;
             await InitDataTable();
             
-            // Khởi tạo layout adminty giống như trang Home và UsGroupList
+            // Khởi tạo layout adminty giống như
             try {
                 // Reload layout scripts để đảm bảo NavMenu và SettingTheme hoạt động
-                // await JS.InvokeVoidAsync("eval", "$.getScript('js/pcoded.min.js')");
-                // await JS.InvokeVoidAsync("eval", "$.getScript('js/vartical-layout.min.js')");
-                // await JS.InvokeVoidAsync("eval", "$.getScript('js/script.js')");
-                
-                // await JS.InvokeVoidAsync("adminAssetManager.hideLoader");
+                await JS.InvokeVoidAsync("adminAssetManager.initAdminLayout");
             } catch (Exception ex) {
                 // Console.WriteLine($"Error initializing layout: {ex.Message}");
             }
