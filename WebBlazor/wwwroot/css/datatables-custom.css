@@ -24,7 +24,7 @@ table.dataTable thead > tr > td.dt-ordering-desc span.dt-column-order:after {
 
 /* Active sort - làm đậm icon đang active */
 table.dataTable thead > tr > th.dt-ordering-asc span.dt-column-order:before,
-table.dataTable thead > tr > td.dt-ordering-asc span.dt-column-order:before {
+table.dataTable thead > tr > td.dt-ordering-asc span.dt-    column-order:before {
     opacity: 1 !important;
     color: #01a9ac !important;
 }
@@ -89,10 +89,10 @@ table.dataTable thead > tr > td span.dt-column-order:after {
    Chiều cao tự động theo nội dung, có giới hạn max
    ======================================== */
 .dt-scroll-body {
-    /* KHÔNG dùng height cố định - chỉ dùng max-height */
+    overflow-y: scroll !important;
     height: auto !important;
     min-height: unset !important;
-    max-height: calc(100vh - 320px) !important;
+    max-height: calc(100vh - 220px) !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
     scroll-behavior: smooth;
@@ -100,18 +100,14 @@ table.dataTable thead > tr > td span.dt-column-order:after {
 }
 
 /* Override inline style từ DataTables - QUAN TRỌNG */
-.dataTables_wrapper .dt-scroll .dt-scroll-body {
-    height: auto !important;
-    min-height: unset !important;
+.dataTables_wrapper .dt-scroll .dt-scroll-body,
+.dt-scroll-body {
+    height: initial !important; /* hoặc unset */
+    min-height: 0 !important;
+    overflow-y: scroll !important; /* luôn chừa chỗ scrollbar dọc để khỏi lệch */
+    overflow-x: auto !important;
 }
 
-/* Override cho cả class dataTables_scrollBody (DataTables 1.x) */
-.dataTables_scrollBody {
-    overflow-x: auto !important;
-    overflow-y: auto !important;
-    height: auto !important;
-    min-height: unset !important;
-}
 
 /* Đảm bảo table bên trong không có min-height */
 .dt-scroll-body > table,
@@ -511,15 +507,7 @@ table.dataTable tbody tr.selected:hover {
     border-collapse: collapse !important;
 }
 
-/* Fix lỗi lệch header khi có scrollbar */
-.dataTables_scrollHeadInner {
-    width: 100% !important;
-    padding-right: 0 !important;
-}
 
-    .dataTables_scrollHeadInner table {
-        width: 100% !important;
-    }
 
 /* Đồng bộ padding giữa header và body */
 .table th, .table td {
@@ -621,7 +609,7 @@ table.dataTable tbody tr.selected:hover {
     }
     
     .dt-scroll-body {
-        max-height: calc(100vh - 220px) !important;
+        max-height: calc(100vh - 280px) !important;
         height: auto !important;
     }
 }
@@ -629,7 +617,7 @@ table.dataTable tbody tr.selected:hover {
 /* DESKTOP - từ 992px trở lên */
 @media (min-width: 992px) {
     .dt-scroll-body {
-        max-height: calc(100vh - 220px) !important;
+        max-height: calc(100vh - 280px) !important;
 /*        height: auto !important;*/
     }
 }
@@ -1115,3 +1103,12 @@ table.dataTable tbody td.dataTables_empty {
 .pcoded-inner-navbar {
     padding-bottom: 80px !important;
 }
+
+
+
+
+
+
+
+
+

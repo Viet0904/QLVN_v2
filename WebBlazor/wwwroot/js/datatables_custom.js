@@ -34,7 +34,7 @@ window.initGenericDataTable = function (selector, config) {
     config = config || {};
     var columnNames = config.columnNames || [];
     // Chỉnh sửa chiều cao scroll nếu được cấu hình
-    var scrollY = config.scrollY || 'calc(100vh - 220px)';
+    var scrollY = config.scrollY || 'calc(100vh - 280px)';
 
     // Xóa các dropdown cũ liên quan đến selector này
     $('.dt-column-dropdown[data-table="' + selector + '"]').remove();
@@ -49,7 +49,7 @@ window.initGenericDataTable = function (selector, config) {
         scrollY: scrollY,
         scrollX: true,
         scrollCollapse: true,
-        autoWidth: true,
+        autoWidth: false,
         deferRender: true, // Chỉ render những hàng thực sự hiển thị
         serverSide: config.serverSide || false,
         processing: config.serverSide || false,
@@ -77,6 +77,8 @@ window.initGenericDataTable = function (selector, config) {
                     window[config.bindEvents](selector);
                 }
             }, 50);
+            const api = this.api();
+            requestAnimationFrame(() => api.columns.adjust());
         },
         initComplete: function () {
             var api = this.api();
@@ -182,6 +184,13 @@ window.initGenericDataTable = function (selector, config) {
     }
 
     const table = $(selector).DataTable(tableOptions);
+
+    // 
+    table.on('column-visibility.dt', () => table.columns.adjust());
+
+    table.on('page.dt length.dt order.dt search.dt', () =>
+        table.columns.adjust()
+    );
 
     window.dataTableInstances[selector] = table;
     window.dataTableConfigs[selector] = config;
