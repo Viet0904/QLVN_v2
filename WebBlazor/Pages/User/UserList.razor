@@ -201,6 +201,7 @@
             try {
                 // Reload layout scripts để đảm bảo NavMenu và SettingTheme hoạt động
                 await JS.InvokeVoidAsync("adminAssetManager.initAdminLayout");
+                Task.Delay(200).Wait(); // Chờ một chút để layout ổn định
             } catch (Exception ex) {
                 // Console.WriteLine($"Error initializing layout: {ex.Message}");
             }
