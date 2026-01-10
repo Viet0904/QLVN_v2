@@ -37,5 +37,11 @@ namespace Common.Library.Constant
             public const string Name = "DbAoNuoi";
             public const int Length = 5;
         }
+
+        public struct DbNhaCungCap
+        {
+            public const string Name = "DbNhaCungCap";
+            public const int Length = 5;
+        }
     }
 }
