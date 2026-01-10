@@ -60,137 +60,6 @@ table.dataTable thead > tr > td span.dt-column-order:after {
     line-height: 1 !important;
 }
 
-/* === AUTO HEIGHT & SCROLLABLE TABLE === */
-/* Table container tự động điều chỉnh chiều cao theo nội dung */
-.dataTables_wrapper {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Container cho scroll */
-.dt-scroll {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    overflow: hidden;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.dt-scroll-head {
-    background: #f8f9fa !important;
-    overflow: hidden !important;
-    flex-shrink: 0;
-}
-
-/* ========================================
-   SCROLL BODY - AUTO HEIGHT WITH MAX LIMIT
-   Chiều cao tự động theo nội dung, có giới hạn max
-   ======================================== */
-.dt-scroll-body {
-    overflow-y: scroll !important;
-    height: auto !important;
-    min-height: unset !important;
-    max-height: calc(100vh - 220px) !important;
-    overflow-y: auto !important;
-    overflow-x: auto !important;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Override inline style từ DataTables - QUAN TRỌNG */
-.dataTables_wrapper .dt-scroll .dt-scroll-body,
-.dt-scroll-body {
-    height: initial !important; /* hoặc unset */
-    min-height: 0 !important;
-    overflow-y: scroll !important; /* luôn chừa chỗ scrollbar dọc để khỏi lệch */
-    overflow-x: auto !important;
-}
-
-
-/* Đảm bảo table bên trong không có min-height */
-.dt-scroll-body > table,
-.dataTables_scrollBody > table {
-    margin-bottom: 0 !important;
-}
-
-/* Responsive max-height theo viewport - DESKTOP */
-@media screen and (min-height: 1000px) {
-    .dt-scroll-body {
-        max-height: calc(100vh - 320px) !important;
-        height: auto !important;
-    }
-}
-
-@media screen and (min-height: 800px) and (max-height: 999px) {
-    .dt-scroll-body {
-        max-height: calc(100vh - 300px) !important;
-        height: auto !important;
-    }
-}
-
-@media screen and (min-height: 600px) and (max-height: 799px) {
-    .dt-scroll-body {
-        max-height: calc(100vh - 280px) !important;
-        height: auto !important;
-    }
-}
-
-@media screen and (max-height: 599px) {
-    .dt-scroll-body {
-        max-height: calc(100vh - 250px) !important;
-        height: auto !important;
-    }
-}
-
-/* Responsive width - Mobile & Tablet */
-@media screen and (max-width: 1200px) {
-    table.dataTable {
-        font-size: 13px;
-    }
-
-    table.dataTable > tbody > tr > th,
-    table.dataTable > tbody > tr > td {
-        padding: 6px 8px;
-    }
-}
-
-@media screen and (max-width: 768px) {
-    .dt-scroll-body {
-        max-height: calc(100vh - 380px) !important;
-        height: auto !important;
-    }
-    
-    table.dataTable {
-        font-size: 12px;
-    }
-
-    table.dataTable > tbody > tr > th,
-    table.dataTable > tbody > tr > td {
-        padding: 5px 6px;
-    }
-
-    .dt-custom-toolbar {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 10px !important;
-    }
-
-    .dt-toolbar-left,
-    .dt-toolbar-right {
-        width: 100%;
-    }
-
-    .dt-search-wrapper {
-        width: 100%;
-    }
-
-    .dt-search-wrapper input {
-        width: 100% !important;
-    }
-}
-
 /* === HEADER STYLING === */
 table.dataTable thead th,
 table.dataTable thead td {
@@ -201,6 +70,7 @@ table.dataTable thead td {
     color: #495057 !important;
     font-weight: 600;
     border-bottom: 2px solid #dee2e6 !important;
+    padding: 12px 60px 12px 10px !important; /* CHANGED: Tăng padding-right để chừa chỗ cho icons */
 }
 
 .dt-scroll-head table.dataTable thead th {
@@ -210,7 +80,7 @@ table.dataTable thead td {
 
 table.dataTable thead th .dt-column-order {
     position: absolute !important;
-    right: 28px !important;
+    right: 35px !important; /* CHANGED: Dịch sang trái hơn để tránh đè text */
     top: 50% !important;
     transform: translateY(-50%) !important;
     margin: 0 !important;
@@ -218,7 +88,7 @@ table.dataTable thead th .dt-column-order {
 
 .dt-column-menu {
     position: absolute !important;
-    right: 8px !important;
+    right: 10px !important; /* CHANGED: Dịch vào trong hơn */
     top: 50% !important;
     transform: translateY(-50%) !important;
     cursor: pointer;
@@ -254,17 +124,18 @@ table.dataTable thead th .dt-column-order {
 
 /* Đảm bảo header có đủ padding cho cả sort icon và menu icon */
 table.dataTable thead th {
-    padding-right: 60px !important;
+    padding-right: 65px !important; /* CHANGED: Tăng lên để đủ chỗ */
     position: relative !important;
 }
 
-/* Sort icon position - dịch sang trái để nhường chỗ cho menu icon */
+/* Sort icon position - đảm bảo không đè text */
 table.dataTable thead th .dt-column-order {
     position: absolute !important;
-    right: 30px !important;
+    right: 35px !important; /* CHANGED: Điều chỉnh vị trí */
     top: 50% !important;
     transform: translateY(-50%) !important;
     margin: 0 !important;
+    width: 16px !important; /* ADDED: Fixed width */
 }
 
 /* Column cuối cùng không cần icon */
@@ -283,363 +154,138 @@ table.dataTable tfoot th {
     border-top: 2px solid #dee2e6 !important;
 }
 
-/* === DROPDOWN MENU === */
-.dt-column-dropdown {
-    display: none;
-    position: fixed;
-    min-width: 220px;
-    max-width: 280px;
-    background: #fff;
+/* === AUTO HEIGHT & SCROLLABLE TABLE === */
+/* Table container tự động điều chỉnh chiều cao theo nội dung */
+.dataTables_wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Container cho scroll */
+.dt-scroll {
     border: 1px solid #dee2e6;
     border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-    z-index: 99999;
-    padding: 8px 0;
-}
-
-.dt-column-dropdown.show {
-    display: block;
-}
-
-.dt-dropdown-item {
+    overflow: hidden;
+    flex: 1;
     display: flex;
-    align-items: center;
-    padding: 10px 16px;
-    cursor: pointer;
-    color: #333;
-    font-size: 13px;
-    transition: background-color 0.15s ease;
-}
-
-.dt-dropdown-item:hover {
-    background-color: #f1f3f4;
-    color: #01a9ac;
-}
-
-.dt-dropdown-item i {
-    margin-right: 10px;
-    font-size: 14px;
-    color: #666;
-    width: 16px;
-}
-
-.dt-dropdown-item:hover i {
-    color: #01a9ac;
-}
-
-.dt-dropdown-divider {
-    height: 1px;
-    background-color: #e9ecef;
-    margin: 8px 0;
-}
-
-.dt-dropdown-section {
-    padding: 8px 16px;
-}
-
-.dt-dropdown-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: #6c757d;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-}
-
-.dt-filter-type {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 13px;
-    background: #fff;
-    cursor: pointer;
-}
-
-.dt-filter-type:focus {
-    border-color: #01a9ac;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
-}
-
-.dt-dropdown-filter {
-    padding: 8px 16px;
-}
-
-.dt-filter-input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 13px;
-}
-
-.dt-filter-input:focus {
-    border-color: #01a9ac;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(1, 169, 172, 0.2);
-}
-
-.dt-clear-filter {
-    color: #dc3545 !important;
-    border-top: 1px solid #e9ecef;
-    margin-top: 8px;
-    padding-top: 12px !important;
-}
-
-.dt-clear-filter:hover {
-    background-color: #ffeef0 !important;
-}
-
-.dt-clear-filter i {
-    color: #dc3545 !important;
-}
-
-.dt-dropdown-item.dt-hide-column {
-    color: #dc3545;
-}
-
-.dt-dropdown-item.dt-hide-column:hover {
-    background: #fff5f5;
-}
-
-.dt-dropdown-item.dt-hide-column i {
-    color: #dc3545;
-}
-
-/* === PAGINATION === */
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-    padding: 5px 10px;
-    margin: 0 2px;
-    border-radius: 4px;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button.current {
-    background: #01a9ac !important;
-    border-color: #01a9ac !important;
-    color: white !important;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-    background: #e9ecef !important;
-    border-color: #ddd !important;
-    color: #333 !important;
-}
-
-.dataTables_wrapper .dataTables_filter input {
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    padding: 5px 10px;
-    margin-left: 5px;
-}
-
-.dataTables_wrapper .dataTables_length select {
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    padding: 5px;
-}
-
-.card-block {
-    overflow: visible !important;
-}
-
-/* Custom scrollbar - smooth */
-.dt-scroll-body::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-.dt-scroll-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 5px;
-}
-
-.dt-scroll-body::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 5px;
-    border: 2px solid #f1f1f1;
-}
-
-.dt-scroll-body::-webkit-scrollbar-thumb:hover {
-    background: #888;
-}
-
-.dt-scroll-body::-webkit-scrollbar-corner {
-    background: #f1f1f1;
-}
-
-/* === ROW STYLES === */
-table.dataTable tbody tr:nth-child(odd) {
-    background-color: #ffffff;
-}
-
-table.dataTable tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-
-table.dataTable tbody tr:hover {
-    background-color: #e9ecef !important;
-}
-
-table.dataTable tbody tr.selected {
-    background-color: rgba(1, 169, 172, 0.15) !important;
-}
-
-table.dataTable tbody tr.selected:hover {
-    background-color: rgba(1, 169, 172, 0.25) !important;
-}
-
-/* ==========================================
-   CUSTOM DATATABLE STYLES - RESPONSIVE
-   ========================================== */
-
-/* Base table responsive wrapper */
-/*.table-responsive {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}*/
-
-/* Đảm bảo table luôn chiếm 100% chiều rộng container */
-.dataTables_wrapper table {
-    width: 100% !important;
-    margin: 0 !important;
-    border-collapse: collapse !important;
-}
-
-
-
-/* Đồng bộ padding giữa header và body */
-.table th, .table td {
-    white-space: nowrap; /* Tránh việc text tự xuống hàng làm lệch row height */
-}
-
-
-/* DataTable scrolling container */
-.dt-scroll {
-    width: 100% !important;
-    overflow-x: auto;
+    flex-direction: column;
 }
 
 .dt-scroll-head {
+    background: #f8f9fa !important;
     overflow: hidden !important;
+    flex-shrink: 0;
 }
 
-/* MOBILE RESPONSIVE - dưới 768px */
-@media (max-width: 767px) {
-    .dt-custom-toolbar {
-        flex-direction: column !important;
-        gap: 10px !important;
-    }
-    
-    .dt-toolbar-left,
-    .dt-toolbar-right {
-        width: 100% !important;
-        flex-direction: column !important;
-        gap: 10px !important;
-    }
-    
-    .dt-search-wrapper,
-    .dt-length-wrapper,
-    .colvis-wrapper {
-        width: 100% !important;
-    }
-    
-    .dt-search-wrapper input,
-    .dt-length-wrapper select,
-    .colvis-btn-custom,
-    .dt-add-new-btn {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-    
-     Pagination info cho mobile 
-    .dt-custom-pagination {
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 10px !important;
-    }
-    
-    .dt-pagination-info {
-        text-align: center !important;
-        font-size: 13px !important;
-    }
-    
-    .dt-pagination-buttons {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: center !important;
-        gap: 5px !important;
-    }
-    
-    .dt-pagination-buttons button {
-        padding: 6px 12px !important;
-        font-size: 14px !important;
-    }
-    
-     Table adjustments cho mobile 
-    table.dataTable {
-        font-size: 13px !important;
-    }
-    
-    table.dataTable thead th {
-        padding: 10px 8px !important;
-        font-size: 13px !important;
-    }
-    
-    table.dataTable tbody td {
-        padding: 10px 8px !important;
-        font-size: 13px !important;
-    }
+/* ========================================
+   SCROLL BODY - AUTO HEIGHT WITH MAX LIMIT
+   Chiều cao tự động theo nội dung, có giới hạn max
+   ======================================== */
+.dt-scroll-body {
+    overflow-y: scroll !important;
+    height: auto !important;
+    min-height: unset !important;
+    max-height: calc(100vh - 220px) !important;
+    overflow-x: auto !important;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
-/* TABLET RESPONSIVE - 768px đến 991px */
-@media (min-width: 768px) and (max-width: 991px) {
-    .dt-custom-toolbar {
-        padding: 12px 0 !important;
-    }
-    
-    .dt-toolbar-left,
-    .dt-toolbar-right {
-        gap: 10px !important;
-    }
-    
-    .dt-search-wrapper input {
-        width: 200px !important;
-    }
-    
-    .dt-scroll-body {
-        max-height: calc(100vh - 280px) !important;
-        height: auto !important;
-    }
+/* Override inline style từ DataTables - QUAN TRỌNG */
+.dataTables_wrapper .dt-scroll .dt-scroll-body,
+.dt-scroll-body {
+    height: initial !important;
+    min-height: 0 !important;
+    overflow-y: scroll !important;
+    overflow-x: auto !important;
 }
 
-/* DESKTOP - từ 992px trở lên */
-@media (min-width: 992px) {
-    .dt-scroll-body {
-        max-height: calc(100vh - 280px) !important;
-/*        height: auto !important;*/
-    }
+/* FIX HEADER/BODY ALIGNMENT - CRITICAL */
+/* Đảm bảo header table và body table có cùng width calculation */
+.dt-scroll-head table,
+.dt-scroll-body table {
+    width: 100% !important;
+    table-layout: fixed !important; /* CRITICAL: Fixed layout để đồng bộ width */
+    border-collapse: collapse !important; /* CHANGED: collapse thay vì separate để border đẹp hơn */
 }
 
-/* Custom scrollbar cho tất cả màn hình */
-.dt-scroll-body::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* Đảm bảo các cell có cùng box-sizing và có border */
+.dt-scroll-head table th,
+.dt-scroll-body table td {
+    box-sizing: border-box !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 12px 60px 12px 10px !important; /* CHANGED: Thêm padding-right 60px để chừa chỗ cho icons */
+    border: 1px solid #dee2e6 !important; /* ADDED: Border cho mọi cell */
 }
 
-.dt-scroll-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
+/* Đảm bảo wrapper có cùng padding/border */
+.dt-scroll-head,
+.dt-scroll-body {
+    box-sizing: border-box !important;
 }
 
-.dt-scroll-body::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+/* Fix scrollbar offset - CRITICAL */
+.dt-scroll-head {
+    overflow: hidden !important;
+    padding-right: 0 !important;
+    overflow-x: hidden !important;
 }
 
-.dt-scroll-body::-webkit-scrollbar-thumb:hover {
-    background: #555;
+.dt-scroll-head .dataTables_scrollHeadInner {
+    box-sizing: border-box !important;
+    padding-right: 0 !important;
+}
+
+/* Đảm bảo body table có scrollbar visible để header tính toán đúng */
+.dt-scroll-body {
+    overflow-y: scroll !important; /* Always show vertical scrollbar */
+    overflow-x: auto !important;
+    box-sizing: border-box !important;
+}
+
+/* Fix cho wrapper */
+.dataTables_scroll {
+    width: 100% !important;
+}
+
+/* Thêm border cho table */
+.dt-scroll-head table,
+.dt-scroll-body table {
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Border style cho header cells */
+.dt-scroll-head table th {
+    border-bottom: 2px solid #dee2e6 !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Border style cho body cells */
+.dt-scroll-body table td {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+/* === AUTO HEIGHT TABLE (NO SCROLL) === */
+/* Đối với các bảng không cần scroll, tự động điều chỉnh chiều cao theo nội dung */
+.dataTables_wrapper.no-scroll .dt-scroll-body {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* ========================================
+   SCROLLABLE TABLE WITH MAX HEIGHT
+   ======================================== */
+/* Table có chiều cao tối đa, có thanh cuộn khi quá nội dung */
+.dt-scrollable {
+    display: block;
+    max-height: 600px; /* Chiều cao tối đa */
+    overflow-y: auto; /* Xuất hiện thanh cuộn dọc khi cần thiết */
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
 }
 
 /* ========================================
@@ -913,20 +559,23 @@ table.dataTable tbody tr.selected:hover {
 
 table.dataTable {
     width: 100% !important;
-    border-collapse: collapse;
+    border-collapse: collapse !important; /* CHANGED: collapse để border đẹp hơn */
+    border: 1px solid #dee2e6 !important; /* ADDED: Border cho table */
 }
 
 table.dataTable thead th {
     background-color: #f8f9fa;
     font-weight: 600;
-    padding: 12px 10px;
-    border-bottom: 2px solid #dee2e6;
+    padding: 12px 60px 12px 10px !important; /* CHANGED: Padding right lớn hơn */
+    border: 1px solid #dee2e6 !important; /* ADDED: Border */
+    border-bottom: 2px solid #dee2e6 !important;
     white-space: nowrap;
+    position: relative; /* ADDED: Để position icons */
 }
 
 table.dataTable tbody td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #dee2e6;
+    padding: 12px 10px !important;
+    border: 1px solid #dee2e6 !important; /* ADDED: Border */
 }
 
 table.dataTable tbody tr:hover {

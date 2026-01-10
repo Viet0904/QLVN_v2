@@ -43,14 +43,14 @@ window.initGenericDataTable = function (selector, config) {
         responsive: false,
         searching: config.searching !== undefined ? config.searching : true,
         ordering: true,
-        info: config.info !== undefined ? config.info : true, // Bật info để hiện số bản ghi khi dùng server-side
-        paging: config.paging !== undefined ? config.paging : true, // Bật paging mặc định của DataTables
+        info: config.info !== undefined ? config.info : true,
+        paging: config.paging !== undefined ? config.paging : true,
         lengthChange: false,
         scrollY: scrollY,
         scrollX: true,
-        scrollCollapse: true,
+        scrollCollapse: false, // CHANGED: Tắt scrollCollapse để tránh lệch
         autoWidth: false,
-        deferRender: true, // Chỉ render những hàng thực sự hiển thị
+        deferRender: true,
         serverSide: config.serverSide || false,
         processing: config.serverSide || false,
         order: config.defaultOrder || [[0, "asc"]],
@@ -78,7 +78,12 @@ window.initGenericDataTable = function (selector, config) {
                 }
             }, 50);
             const api = this.api();
-            requestAnimationFrame(() => api.columns.adjust());
+            // IMPROVED: Điều chỉnh columns nhiều lần để đảm bảo chính xác
+            requestAnimationFrame(() => {
+                api.columns.adjust();
+                setTimeout(() => api.columns.adjust(), 50);
+                setTimeout(() => api.columns.adjust(), 150);
+            });
         },
         initComplete: function () {
             var api = this.api();
@@ -94,7 +99,12 @@ window.initGenericDataTable = function (selector, config) {
                 createColumnMenu(column, header, index, api, selector);
             });
 
-            setTimeout(function () { api.columns.adjust(); }, 150);
+            // IMPROVED: Điều chỉnh columns nhiều lần sau khi init
+            setTimeout(function () { 
+                api.columns.adjust(); 
+                setTimeout(() => api.columns.adjust(), 100);
+                setTimeout(() => api.columns.adjust(), 300);
+            }, 150);
         }
 
     };
@@ -103,22 +113,16 @@ window.initGenericDataTable = function (selector, config) {
     if (config.serverSide) {
         tableOptions.ajax = function (data, callback, settings) {
             if (window.blazorInstance) {
-                // V
                 window.blazorInstance.invokeMethodAsync('LoadServerSideData', data)
                     .then(result => {
-                        // Chuyển đổi format dữ liệu nếu cần
                         var mappedData = [];
                         if (result && result.data) {
                             var columns = config.columns || [];
                             result.data.forEach(function (item) {
                                 var rowData = [];
-                                console.log('Processing item:', item);
-                                console.log('Using columns:', columns);
                                 columns.forEach(function (col) {
-                                    // 1) lấy value không phân biệt hoa thường
                                     let val = getValueIgnoreCase(item, col);
 
-                                    // 2) renderers / rowStatus giữ nguyên logic
                                     if (config.columnRenderers && config.columnRenderers[col]) {
                                         val = window[config.columnRenderers[col]](val, item);
                                     } else if (col.toLowerCase() === 'rowstatus') {
@@ -126,7 +130,6 @@ window.initGenericDataTable = function (selector, config) {
                                             ? '<span class="badge bg-success">Đang Hoạt động</span>'
                                             : '<span class="badge bg-danger">Đã xóa</span>';
                                     } else {
-                                        // 3) format date: chỉ theo whitelist
                                         const dateCols = (config.dateColumns && Array.isArray(config.dateColumns))
                                             ? config.dateColumns
                                             : DATE_COLUMNS;
@@ -136,10 +139,8 @@ window.initGenericDataTable = function (selector, config) {
                                         }
                                     }
 
-                                    // 4) push vào rowData 
                                     rowData.push(val === undefined || val === null ? "" : val);
                                 });
-
 
                                 if (config.actionRenderer) {
                                     rowData.push(window[config.actionRenderer](item.id || item.Id || item));
@@ -155,7 +156,6 @@ window.initGenericDataTable = function (selector, config) {
                             data: mappedData
                         });
 
-                        // Highlight rows if needed after redraw
                         setTimeout(() => {
                             if (config.idField) {
                                 var $rows = $(selector).find('tbody tr');
@@ -168,7 +168,6 @@ window.initGenericDataTable = function (selector, config) {
                         }, 50);
                     })
                     .catch(err => {
-                        //console.error('❌ Error loading server-side data:', err);
                         callback({
                             draw: data.draw,
                             recordsTotal: 0,
@@ -177,7 +176,6 @@ window.initGenericDataTable = function (selector, config) {
                         });
                     });
             } else {
-                //console.warn('⚠️ Blazor instance not registered for server-side pagination');
                 callback({ draw: data.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
             }
         };
@@ -185,20 +183,34 @@ window.initGenericDataTable = function (selector, config) {
 
     const table = $(selector).DataTable(tableOptions);
 
-    // 
-    table.on('column-visibility.dt', () => table.columns.adjust());
+    // IMPROVED: Điều chỉnh columns khi có thay đổi
+    table.on('column-visibility.dt', () => {
+        table.columns.adjust();
+        setTimeout(() => table.columns.adjust(), 50);
+    });
 
-    table.on('page.dt length.dt order.dt search.dt', () =>
-        table.columns.adjust()
-    );
+    table.on('page.dt length.dt order.dt', () => {
+        table.columns.adjust();
+        setTimeout(() => table.columns.adjust(), 50);
+    });
 
     window.dataTableInstances[selector] = table;
     window.dataTableConfigs[selector] = config;
 
-    // Lắng nghe sự kiện resize cửa sổ để chỉnh lại UI
+    // NEW: Thêm helper function để force adjust table
+    window.dataTableInstances[selector].forceAdjust = function() {
+        this.columns.adjust();
+        setTimeout(() => this.columns.adjust(), 50);
+        setTimeout(() => this.columns.adjust(), 150);
+    };
+
+    // Lắng nghe sự kiện resize cửa sổ
     $(window).on('resize', function () {
-        table.columns.adjust();
+        if (window.dataTableInstances[selector]) {
+            window.dataTableInstances[selector].forceAdjust();
+        }
     });
+    
     // Sidebar Observer để auto resize
     setupSidebarToggleObserver(selector);
 
@@ -207,11 +219,8 @@ window.initGenericDataTable = function (selector, config) {
 
 // Cập nhật dữ liệu vào Table, 
 window.updateGenericDataTableData = function (selector, paginatedData) {
-    //console.time('DataTableRender:' + selector);
     var table = window.dataTableInstances[selector];
     if (!table) return;
-    console.log("First item keys:", paginatedData?.items?.[0] && Object.keys(paginatedData.items[0]));
-    console.log("First item:", paginatedData?.items?.[0]);
 
     try {
         var config = window.dataTableConfigs[selector] || {};
@@ -229,10 +238,8 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
             paginatedData.items.forEach(function (item) {
                 var rowData = [];
                 columns.forEach(function (col) {
-                    // 1) lấy value không phân biệt hoa thường
                     let val = getValueIgnoreCase(item, col);
 
-                    // 2) renderers / rowStatus 
                     if (config.columnRenderers && config.columnRenderers[col]) {
                         val = window[config.columnRenderers[col]](val, item);
                     } else if (col.toLowerCase() === 'rowstatus') {
@@ -240,7 +247,6 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
                             ? '<span class="badge bg-success">Đang Hoạt động</span>'
                             : '<span class="badge bg-danger">Đã xóa</span>';
                     } else {
-                        // 3) format date: chỉ theo whitelist
                         const dateCols = (config.dateColumns && Array.isArray(config.dateColumns))
                             ? config.dateColumns
                             : DATE_COLUMNS;
@@ -250,14 +256,10 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
                         }
                     }
 
-                    // 4) push vào rowData 
                     rowData.push(val === undefined || val === null ? "" : val);
                 });
 
-
-                // Add Actions column if configured
                 if (config.actionRenderer) {
-                    // FIX: Pass ID directly, not the whole object, to avoid [object Object] in string concatenation
                     var itemId = item.id || item.Id || (item[config.idField] ? item[config.idField] : null);
                     if (!itemId && config.idField) {
                          itemId = item[config.idField.charAt(0).toLowerCase() + config.idField.slice(1)];
@@ -276,15 +278,33 @@ window.updateGenericDataTableData = function (selector, paginatedData) {
 
         table.draw(false);
 
-        // FIX CHÍNH Ở ĐÂY: Sử dụng setTimeout để đảm bảo DOM đã render xong dữ liệu mới adjust
+        // IMPROVED: Sử dụng forceDataTableSync để đảm bảo header và body sync
         setTimeout(function () {
-            table.columns.adjust();
+            if (window.forceDataTableSync) {
+                window.forceDataTableSync(selector);
+            } else {
+                table.columns.adjust();
+            }
+        }, 50);
+        
+        setTimeout(function () {
+            if (window.forceDataTableSync) {
+                window.forceDataTableSync(selector);
+            } else {
+                table.columns.adjust();
+            }
         }, 150);
+        
+        setTimeout(function () {
+            if (window.forceDataTableSync) {
+                window.forceDataTableSync(selector);
+            } else {
+                table.columns.adjust();
+            }
+        }, 300);
 
     } catch (e) {
-        
-    } finally {
-       
+        console.error('Error updating table data:', e);
     }
 };
 
@@ -297,13 +317,12 @@ function setupSidebarToggleObserver(selector) {
         const observer = new MutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
                 if (mutation.type === 'attributes') {
-                    // Khi có sự thay đổi về attribute (thường là pcoded-device-type hoặc các class toggle)
                     setTimeout(function () {
                         const table = window.dataTableInstances[selector];
-                        if (table) {
-                            table.columns.adjust().draw(false);
+                        if (table && table.forceAdjust) {
+                            table.forceAdjust(); // IMPROVED: Sử dụng forceAdjust thay vì adjust đơn
                         }
-                    }, 300); // Đợi menu animation hoàn tất
+                    }, 300);
                 }
             });
         });
@@ -1122,6 +1141,12 @@ function formatDateTime(dateString) {
         return '';
     }
 }
+
+
+
+
+
+
 
 
 

@@ -249,14 +249,17 @@
         {
             paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
             sw.Stop();
-            // Console.WriteLine($"[UserList] Data fetched in {sw.ElapsedMilliseconds}ms. Records: {paginatedUsers.TotalRecords}");
             
             await RefreshDataTable();
             StateHasChanged();
 
-            // 
-            //  sau khi Blazor render xong các thành phần, JS sẽ gọi phần điểu chỉnh adjust để header và body table không lệch.
-            await JS.InvokeVoidAsync("eval", $"if(window.dataTableInstances['#{tableId}']) window.dataTableInstances['#{tableId}'].columns.adjust();");
+            // IMPROVED: Gọi forceAdjust thay vì adjust đơn
+            await Task.Delay(100); // Đợi DOM render xong
+            await JS.InvokeVoidAsync("eval", $@"
+                if(window.dataTableInstances['#{tableId}'] && window.dataTableInstances['#{tableId}'].forceAdjust) {{
+                    window.dataTableInstances['#{tableId}'].forceAdjust();
+                }}
+            ");
         }
         catch (Exception ex)
         {
