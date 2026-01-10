@@ -391,7 +391,7 @@ function createCustomToolbar(api, wrapper, columnNames, totalColumns, config) {
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                        z-index: 2000;
+                        z-index: 1500;
                         min-width: 240px;
                         max-height: 400px;
                         overflow-y: auto;
@@ -594,13 +594,13 @@ function createColumnMenu(column, header, index, api, selector) {
             <i class="feather icon-x-circle"></i>
             <span>Xóa bộ lọc</span>
         </div>
-        <div class="dt-dropdown-divider"></div>
-        <div class="dt-dropdown-item dt-hide-column">
-            <i class="feather icon-eye-off"></i>
-            <span>Ẩn cột này</span>
-        </div>
     </div>
 `); 
+    //<div class="dt-dropdown-divider"></div>
+    //<div class="dt-dropdown-item dt-hide-column">
+    //    <i class="feather icon-eye-off"></i>
+    //    <span>Ẩn cột này</span>
+    //</div>
 
     header.append(menuBtn);
     $('body').append(dropdown);

@@ -1,9 +1,9 @@
-/**
+﻿/**
  * DataTable Header/Body Sync Helper
- * Fix l?ch header v� body khi s? d?ng scrollX v� scrollY
+ * Fix lệch header và body khi sử dụng scrollX và scrollY
  */
 
-// H�m sync width gi?a header v� body table
+// Hàm sync width giữa header và body table
 window.syncDataTableHeaderWidth = function(selector) {
     try {
         var table = window.dataTableInstances[selector];
@@ -41,20 +41,63 @@ window.syncDataTableHeaderWidth = function(selector) {
             });
         }
     } catch (e) {
-        console.warn('Error syncing header width:', e);
+        //console.warn('Error syncing header width:', e);
     }
 };
 
-// H�m ?? force re-sync sau khi c� thay ??i
+// Hàm thêm tooltip cho header cells
+window.addDataTableHeaderTooltips = function (selector) {
+    try {
+        var table = window.dataTableInstances[selector];
+        if (!table) return;
+
+        var wrapper = $(table.table().container());
+
+        // Add tooltips for header cells in both scrollable and normal tables
+        wrapper.find('thead th').each(function () {
+            var $th = $(this);
+
+            // Skip if already has title
+            if ($th.attr('title')) return;
+
+            // Get text content (excluding icons and menu)
+            var textNode = $th.contents().filter(function () {
+                return this.nodeType === 3; // Text node
+            }).text().trim();
+
+            // If no text node, try to get from span or other elements
+            if (!textNode) {
+                textNode = $th.clone()
+                    .children('.dt-column-order, .dt-column-menu')
+                    .remove()
+                    .end()
+                    .text()
+                    .trim();
+            }
+
+            if (textNode) {
+                $th.attr('title', textNode);
+            }
+        });
+
+        //console.log('✓ Header tooltips added for', selector);
+    } catch (e) {
+        //console.warn('Error adding header tooltips:', e);
+    }
+};
+
+
+// Hàm để force re-sync sau khi có thay đổi
 window.forceDataTableSync = function(selector) {
     var table = window.dataTableInstances[selector];
     if (!table) return;
     
-    // Multiple adjustments ?? ??m b?o sync
+    // Multiple adjustments để đảm bảo sync
     table.columns.adjust();
     
     setTimeout(() => {
         window.syncDataTableHeaderWidth(selector);
+        window.addDataTableHeaderTooltips(selector); 
         table.columns.adjust();
     }, 50);
     
