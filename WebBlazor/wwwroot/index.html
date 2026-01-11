@@ -23,12 +23,6 @@
     <link rel="stylesheet" type="text/css" href="css/icofont.css">
     <link rel="stylesheet" type="text/css" href="css/feather.css">
 
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="css/dataTables.dataTables.min.css" />
-    <link rel="stylesheet" href="/css/select.dataTables.min.css" />
-
-    <!-- Custom DataTables CSS  -->
-    <link rel="stylesheet" href="css/datatables-custom.css" />
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
     <link rel="stylesheet" type="text/css" href="css/jquery.mCustomScrollbar.css">
@@ -111,19 +105,6 @@
     <script src="js/modernizr.js"></script>
     <script src="js/css-scrollbars.js"></script>
 
-    <!-- DataTables JS -->
-    <script src="js/dataTables.min.js"></script>
-    <script src="js/dataTables.select.min.js"></script>
-    <!-- DataTables Buttons Extension -->
-    <script src="js/dataTables.buttons.js"></script>
-    <script src="js/buttons.dataTables.js"></script>
-    <script src="js/buttons.colVis.min.js"></script>
-
-    <script src="js/datatables_custom.js"></script>
-    <!-- NEW: DataTable Header/Body Sync Helper -->
-    <script src="js/datatable-header-sync.js"></script>
-    <script src="js/data-table-custom.js"></script>
-
     <script src="js/pcoded.min.js"></script>
     <script src="js/vartical-layout.min.js"></script>
 
@@ -135,6 +116,9 @@
 
     <!-- CRITICAL: Load themeInterop.js BEFORE other custom scripts -->
     <script src="js/themeInterop.js"></script>
+    
+    <!-- Column Visibility Handler -->
+    <script src="js/columnVisibility.js"></script>
 
     <!-- Verify themeInterop is loaded -->
     <script>
@@ -162,9 +146,9 @@
         gtag('config', 'UA-23581568-13');
     </script>
 
-    <script src="js/datatables.functions.js"></script>
-    <script src="_content/DataTables.Blazor/datatables.blazor.js"></script>
+    <!-- MudBlazor Script -->
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    
     <!-- Blazor Script (LAST) -->
     <script src="_framework/blazor.webassembly.js"></script>
 </body>

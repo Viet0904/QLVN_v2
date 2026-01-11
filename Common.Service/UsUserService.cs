@@ -92,6 +92,8 @@ namespace Common.Service
                         item.Address = model.Address;
                         item.Note = model.Note;
                         item.RowStatus = model.RowStatus;
+                        // FIX: Khởi tạo Theme mặc định để tránh lỗi NOT NULL
+                        item.Theme = string.Empty;
 
                     generateId:
                         string randomPart = GenerateId(DefaultCodeConstant.UsUser.Name, DefaultCodeConstant.UsUser.Length);
@@ -307,17 +309,17 @@ namespace Common.Service
             var query = DbContext.UsUsers.AsNoTracking()
                 .Where(x => x.RowStatus == RowStatusConstant.Active);
 
-            // 2. Search nâng cao
+            // 2. Search nâng cao - Tối ưu hóa với EF.Functions.Like
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
-                var searchLower = request.SearchTerm.Trim().ToLower();
+                var searchPattern = $"%{request.SearchTerm.Trim()}%";
                 query = query.Where(u =>
-                    (u.Id != null && u.Id.Contains(searchLower)) ||
-                    (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
-                    (u.UserName != null && u.UserName.ToLower().Contains(searchLower)) ||
-                    (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
-                    (u.Phone != null && u.Phone.ToLower().Contains(searchLower)) ||
-                    (u.Group.Name != null && u.Group.Name.ToLower().Contains(searchLower))
+                    EF.Functions.Like(u.Id, searchPattern) ||
+                    EF.Functions.Like(u.Name, searchPattern) ||
+                    EF.Functions.Like(u.UserName, searchPattern) ||
+                    (u.Email != null && EF.Functions.Like(u.Email, searchPattern)) ||
+                    (u.Phone != null && EF.Functions.Like(u.Phone, searchPattern)) ||
+                    EF.Functions.Like(u.Group.Name, searchPattern)
                 );
             }
 

@@ -12,108 +12,265 @@
 @inject UserApiClient UserService
 @inject NotificationService NotificationService
 @inject IJSRuntime JS
-@implements IDisposable
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>Danh sách người dùng</h5>
-                <div class="card-header-right">
-                    <ul class="list-unstyled card-option d-inline-block mb-0">
-                        <li><i class="feather icon-maximize full-card"></i></li>
-                        <li><i class="feather icon-minus minimize-card"></i></li>
-                    </ul>
+<style>
+    /* Thêm border cho MudDataGrid */
+    .mud-table-bordered {
+        border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    
+    .mud-table-bordered .mud-table-head .mud-table-cell {
+        border-bottom: 2px solid rgba(0, 0, 0, 0.12);
+        border-right: 1px solid rgba(0, 0, 0, 0.12);
+        font-weight: 600;
+    }
+    
+    .mud-table-bordered .mud-table-cell {
+        border-right: 1px solid rgba(0, 0, 0, 0.12);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    
+    .mud-table-bordered .mud-table-row:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    /* Hiệu ứng highlight cho row vừa thêm/sửa/xóa */
+    @@keyframes highlightRow {
+        0% {
+            background-color: #d4edda;
+            transform: scale(1.02);
+        }
+        50% {
+            background-color: #c3e6cb;
+        }
+        100% {
+            background-color: transparent;
+            transform: scale(1);
+        }
+    }
+
+    @@keyframes deleteHighlight {
+        0% {
+            background-color: #f8d7da;
+            transform: scale(0.98);
+        }
+        50% {
+            background-color: #f5c6cb;
+        }
+        100% {
+            background-color: transparent;
+            opacity: 0.5;
+        }
+    }
+
+    .row-highlight-success {
+        animation: highlightRow 1.5s ease-in-out;
+    }
+
+    .row-highlight-delete {
+        animation: deleteHighlight 0.8s ease-in-out;
+    }
+
+    /* Custom Column Visibility Dropdown */
+    .column-visibility-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .column-visibility-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        min-width: 200px;
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 1000;
+        margin-top: 4px;
+    }
+
+    .column-visibility-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .column-visibility-item:hover {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    .column-visibility-item input[type="checkbox"] {
+        margin-right: 8px;
+    }
+
+    .column-visibility-item.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+
+<MudCard>
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Danh sách người dùng</MudText>
+        </CardHeaderContent>
+        <CardHeaderActions>
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
+                          Color="Color.Primary" 
+                          OnClick="@(async () => await RefreshData())" 
+                          Title="Làm mới" />
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudDataGrid T="UsUserViewModel" 
+                    ServerData="@(new Func<GridState<UsUserViewModel>, Task<GridData<UsUserViewModel>>>(LoadServerData))"
+                    MultiSelection="false"
+                    Filterable="false"
+                    Hideable="false"
+                    ColumnResizeMode="ResizeMode.Column"
+                    RowClass="GetRowClass"
+                    Dense="true"
+                    Hover="true"
+                    Loading="@isLoading"
+                    Class="mud-table-bordered"
+                    Height="calc(100vh - 300px)"
+                    @ref="dataGrid">
+            <ToolBarContent>
+                <MudButton StartIcon="@Icons.Material.Filled.Add" 
+                          Color="Color.Primary" 
+                          Variant="Variant.Filled"
+                          OnClick="@OpenAddModal">
+                    Thêm mới
+                </MudButton>
+                <MudSpacer />
+                
+                <!-- Custom Column Visibility Button -->
+                <div class="column-visibility-dropdown">
+                    <MudButton StartIcon="@Icons.Material.Filled.ViewColumn"
+                              Color="Color.Default"
+                              Variant="Variant.Outlined"
+                              OnClick="@(() => showColumnMenu = !showColumnMenu)"
+                              Style="margin-right: 8px;">
+                        Column visibility
+                    </MudButton>
+                    
+                    @if (showColumnMenu)
+                    {
+                        <div class="column-visibility-menu" @onclick:stopPropagation="true">
+                            @foreach (var col in columnVisibility)
+                            {
+                                <label class="column-visibility-item @(col.Value.IsRequired ? "disabled" : "")" style="cursor: pointer; user-select: none;">
+                                    <input type="checkbox" 
+                                           checked="@col.Value.IsVisible" 
+                                           disabled="@col.Value.IsRequired" 
+                                           @onchange="@((e) => { if (!col.Value.IsRequired) { col.Value.IsVisible = (bool)(e.Value ?? false); StateHasChanged(); } })" />
+                                    <span>@col.Value.Title</span>
+                                </label>
+                            }
+                        </div>
+                    }
                 </div>
-            </div>
 
-            <div class="card-block">
-                @if (isLoading && !dataTableInitialized)
+                <MudTextField @bind-Value="_searchString" 
+                             Placeholder="Tìm kiếm..." 
+                             Adornment="Adornment.Start" 
+                             Immediate="false"
+                             AdornmentIcon="@Icons.Material.Filled.Search" 
+                             IconSize="Size.Medium" 
+                             Class="mt-0"
+                             DebounceInterval="500"
+                             OnDebounceIntervalElapsed="@OnSearch">
+                </MudTextField>
+            </ToolBarContent>
+            <Columns>
+                @if (columnVisibility["Id"].IsVisible)
                 {
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Đang tải dữ liệu...</p>
-                    </div>
+                    <PropertyColumn Property="x => x.Id" Title="ID" />
                 }
-                else
+                @if (columnVisibility["GroupName"].IsVisible)
                 {
-                    @* LUÔN HIỆN TABLE - Kể cả khi không có data *@
-                                @* class= "table-responsive" *@
-                    <div  @ref="tableContainerRef">
-                        <table id="@tableId" class="table table-striped table-hover table-bordered" style="width:100%">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Id</th>
-                                    <th>Nhóm</th>
-                                    <th>Họ Tên</th>
-                                    <th>Tên đăng nhập</th>
-                                    <th>Email</th>
-                                    <th>Điện thoại</th>
-                                    <th>CMND</th>
-                                    <th>Địa chỉ</th>
-                                    <th>Ghi chú</th>
-                                    @* <th>Trạng thái</th> *@
-                                    <th>Ngày tạo</th>
-                                    <th>Người tạo</th>
-                                    <th>Ngày cập nhật</th>
-                                    <th>Người cập nhật</th>
-                                    <th style="width: 120px;">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @* DataTable manage data *@
-                            </tbody>
-                        </table>
-                        
-                        <div class="dt-custom-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
-                            <div class="dt-pagination-info">
-                                @if (paginatedUsers != null && paginatedUsers.TotalRecords > 0)
-                                {
-                                    <span>
-                                        Hiển thị từ @((paginationRequest.PageNumber - 1) * paginationRequest.PageSize + 1)
-                                        đến @(Math.Min(paginationRequest.PageNumber * paginationRequest.PageSize, paginatedUsers.TotalRecords))
-                                        trong @paginatedUsers.TotalRecords bản ghi
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Không có dữ liệu phù hợp</span>
-                                }
-                            </div>
-                            <div class="dt-pagination-buttons">
-                                <button class="btn btn-sm btn-outline-primary"
-                                        @onclick="() => ChangePage(1)"
-                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasPreviousPage)">
-                                    «
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary"
-                                        @onclick="() => ChangePage(paginationRequest.PageNumber - 1)"
-                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasPreviousPage)">
-                                    ‹
-                                </button>
-                                <span class="mx-2">
-                                    Trang @paginationRequest.PageNumber / @(paginatedUsers?.TotalPages ?? 1)
-                                </span>
-                                <button class="btn btn-sm btn-outline-primary"
-                                        @onclick="() => ChangePage(paginationRequest.PageNumber + 1)"
-                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasNextPage)">
-                                    ›
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary"
-                                        @onclick="() => ChangePage(paginatedUsers?.TotalPages ?? 1)"
-                                        disabled="@(paginatedUsers == null || !paginatedUsers.HasNextPage)">
-                                    »
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <PropertyColumn Property="x => x.GroupName" Title="Nhóm" />
                 }
-            </div>
-        </div>
-    </div>
-</div>
+                @if (columnVisibility["Name"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.Name" Title="Họ Tên" />
+                }
+                @if (columnVisibility["UserName"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.UserName" Title="Tên đăng nhập" />
+                }
+                @if (columnVisibility["Email"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.Email" Title="Email" />
+                }
+                @if (columnVisibility["Phone"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.Phone" Title="Điện thoại" />
+                }
+                @if (columnVisibility["CMND"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.CMND" Title="CMND" />
+                }
+                @if (columnVisibility["Address"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.Address" Title="Địa chỉ" />
+                }
+                @if (columnVisibility["Note"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.Note" Title="Ghi chú" />
+                }
+                @if (columnVisibility["CreatedAt"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.CreatedAt" Title="Ngày tạo">
+                        <CellTemplate>
+                            @context.Item.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </CellTemplate>
+                    </PropertyColumn>
+                }
+                @if (columnVisibility["CreatedBy"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.CreatedBy" Title="Người tạo" />
+                }
+                @if (columnVisibility["UpdatedAt"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.UpdatedAt" Title="Ngày cập nhật">
+                        <CellTemplate>
+                            @context.Item.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </CellTemplate>
+                    </PropertyColumn>
+                }
+                @if (columnVisibility["UpdatedBy"].IsVisible)
+                {
+                    <PropertyColumn Property="x => x.UpdatedBy" Title="Người cập nhật" />
+                }
+                
+                <TemplateColumn Title="Hành động" Sortable="false" Filterable="false">
+                    <CellTemplate>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                      Color="Color.Info" 
+                                      Size="Size.Small"
+                                      OnClick="@(async () => await OpenEditModal(context.Item.Id))"
+                                      Title="Chỉnh sửa" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                      Color="Color.Error" 
+                                      Size="Size.Small"
+                                      OnClick="@(() => ConfirmAndDelete(context.Item))"
+                                      Title="Xóa" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="UsUserViewModel" 
+                                 PageSizeOptions="@(new int[] { 10, 25, 50, 100 })" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudCardContent>
+</MudCard>
 
 <!-- User Modal Component -->
 <UserModal UserModel="usUserFormModel"
@@ -125,200 +282,189 @@
            OnSubmit="HandleSaveUser"
            OnClose="CloseModals" />
 
-<!-- Generic Delete Confirmation Modal -->
-<DeleteConfirmationModal IsVisible="@isDeleteModalVisible"
-                        IsProcessing="@isProcessing"
-                        ItemName="@deleteUserName"
-                        OnConfirm="HandleDeleteUser"
-                        OnCancel="CloseModals" />
+<!-- Delete Confirmation Dialog -->
+<DeleteConfirmDialog @ref="deleteConfirmDialog"
+                     Title="Xác nhận xóa"
+                     OnConfirm="HandleDeleteUser" />
 
 @code {
-    // State cho pagination
-    private PaginatedResponse<UsUserViewModel> paginatedUsers = new();
-    private PaginatedRequest paginationRequest = new() { PageNumber = 1, PageSize = 10 };
-
+    // DataGrid reference
+    private MudDataGrid<UsUserViewModel>? dataGrid;
+    
+    // Delete dialog reference
+    private DeleteConfirmDialog? deleteConfirmDialog;
+    
     private List<UsGroupViewModel> allGroups = new();
-    private bool isLoading = true;
-    private bool dataTableInitialized = false;
-    private bool layoutInitialized = false;
-    private DotNetObjectReference<UserList>? objRef;
-    private string tableId = "userDataTable";
-    // Flags để ngăn concurrent operations
-    private bool isDataOperationInProgress = false;
-
-    // Reference đến container
-    private ElementReference tableContainerRef;
+    private bool isLoading = false;
+    private string _searchString = string.Empty;
+    
+    // Store current user to delete
+    private UsUserViewModel? userToDelete;
 
     // Modal states
     private UsUserFormModel usUserFormModel = new();
     private bool isEditMode = false;
     private bool isProcessing = false;
-    private string deleteUserId = string.Empty;
-    private string deleteUserName = string.Empty;
-    private bool isDeleteModalVisible = false;
     private string password = string.Empty;
     private string confirmPassword = string.Empty;
 
-    // Header dynamics configuration
-    private List<TableColumnConfig> TableColumns = new()
-    {
-        new TableColumnConfig { Property = "Id", DisplayName = "Id", Width = "80px" },
-        new TableColumnConfig { Property = "GroupName", DisplayName = "Nhóm", Width = "150px" },
-        new TableColumnConfig { Property = "Name", DisplayName = "Họ Tên", Width = "200px" },
-        new TableColumnConfig { Property = "UserName", DisplayName = "Tên đăng nhập", Width = "150px" },
-        new TableColumnConfig { Property = "Email", DisplayName = "Email", Width = "200px" },
-        new TableColumnConfig { Property = "Phone", DisplayName = "Điện thoại", Width = "120px" },
-        new TableColumnConfig { Property = "CMND", DisplayName = "CMND", Width = "120px" },
-        new TableColumnConfig { Property = "Address", DisplayName = "Địa chỉ", Width = "200px" },
-        new TableColumnConfig { Property = "Note", DisplayName = "Ghi chú", Width = "150px" },
+    // Column visibility states
+    private bool showColumnMenu = false;
+    private string? highlightedRowId = null;
+    private string? highlightClass = null;
 
-        // new TableColumnConfig { Property = "RowStatus", DisplayName = "Trạng thái", Width = "120px" },
-        new TableColumnConfig { Property = "CreatedAt", DisplayName = "Ngày tạo", Width = "180px" }, 
-        new TableColumnConfig { Property = "CreatedBy", DisplayName = "Người tạo", Width = "140px" },
-        new TableColumnConfig { Property = "UpdatedAt", DisplayName = "Ngày cập nhật", Width = "180px" },
-        new TableColumnConfig { Property = "UpdatedBy", DisplayName = "Người cập nhật", Width = "140px" },
-    };
-
-    protected override async Task OnInitializedAsync()
+    // Column visibility configuration
+    private class ColumnVisibilityConfig
     {
-        // KHÔNG nạp groups ở đây để tránh treo trang nếu có 50k groups
-        isLoading = false;
+        public string Title { get; set; } = string.Empty;
+        public bool IsVisible { get; set; } = true;
+        public bool IsRequired { get; set; } = false;
     }
 
+    private Dictionary<string, ColumnVisibilityConfig> columnVisibility = new()
+    {
+        { "Id", new ColumnVisibilityConfig { Title = "ID", IsVisible = true } },
+        { "GroupName", new ColumnVisibilityConfig { Title = "Nhóm", IsVisible = true } },
+        { "Name", new ColumnVisibilityConfig { Title = "Họ Tên", IsVisible = true, IsRequired = true } },
+        { "UserName", new ColumnVisibilityConfig { Title = "Tên đăng nhập", IsVisible = true, IsRequired = true } },
+        { "Email", new ColumnVisibilityConfig { Title = "Email", IsVisible = false } },
+        { "Phone", new ColumnVisibilityConfig { Title = "Điện thoại", IsVisible = true } },
+        { "CMND", new ColumnVisibilityConfig { Title = "CMND", IsVisible = false } },
+        { "Address", new ColumnVisibilityConfig { Title = "Địa chỉ", IsVisible = false } },
+        { "Note", new ColumnVisibilityConfig { Title = "Ghi chú", IsVisible = false } },
+        { "CreatedAt", new ColumnVisibilityConfig { Title = "Ngày tạo", IsVisible = false } },
+        { "CreatedBy", new ColumnVisibilityConfig { Title = "Người tạo", IsVisible = false } },
+        { "UpdatedAt", new ColumnVisibilityConfig { Title = "Ngày cập nhật", IsVisible = false } },
+        { "UpdatedBy", new ColumnVisibilityConfig { Title = "Người cập nhật", IsVisible = false } }
+    };
+
+    // Method để MudDataGrid có thể gọi
+    private string GetRowClass(UsUserViewModel user, int index)
+    {
+        if (user.Id == highlightedRowId)
+        {
+            return highlightClass ?? string.Empty;
+        }
+        return string.Empty;
+    }
+
+    private void ToggleColumn(string columnKey)
+    {
+        if (columnVisibility[columnKey].IsRequired) return;
+        
+        columnVisibility[columnKey].IsVisible = !columnVisibility[columnKey].IsVisible;
+        StateHasChanged();
+    }
+
+    private async Task HighlightRow(string userId, string cssClass, int durationMs = 1500)
+    {
+        highlightedRowId = userId;
+        highlightClass = cssClass;
+        StateHasChanged();
+
+        await Task.Delay(durationMs);
+        
+        highlightedRowId = null;
+        highlightClass = null;
+        StateHasChanged();
+    }
+
+    // xử lý nạp động các js sau khi DOM render xong
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            objRef = DotNetObjectReference.Create(this);
-        }
-
-        if (!isLoading && !layoutInitialized)
-        {
-            layoutInitialized = true;
-            await InitDataTable();
-            
-            // Khởi tạo layout adminty giống như
-            try {
-                // Reload layout scripts để đảm bảo NavMenu và SettingTheme hoạt động
+            try
+            {
                 await JS.InvokeVoidAsync("adminAssetManager.initAdminLayout");
-                Task.Delay(2000).Wait(); // Chờ một chút để layout ổn định
-            } catch (Exception ex) {
-                // Console.WriteLine($"Error initializing layout: {ex.Message}");
+                
+                // Initialize column visibility handler
+                var dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("columnVisibilityHandler.init", dotNetRef);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Dashboard Script Load Error: {ex.Message}");
             }
         }
     }
 
-    private async Task InitDataTable()
+    [JSInvokable]
+    public void CloseColumnMenu()
     {
-        if (dataTableInitialized) return;
-
-        await JS.InvokeVoidAsync("registerBlazorInstance", objRef);
-        
-        var config = new {
-            dom = "rt",      // CHỈ hiện table (r) và processing (t), không hiện paging/info/search mặc định
-            paging = false, 
-            info = false,   
-            serverSide = false,
-            columnNames = TableColumns.Select(c => c.DisplayName).Concat(new[] { "Hành động" }).ToArray(),
-            columns = TableColumns.Select(c => c.Property).ToArray(),
-            idField = "Id",
-            idDataAttr = "data-user-id",
-            bindEvents = "bindAllRowEvents", // xử lý sự kiện cho các nút trong row
-            actionRenderer = "getUserActionButtons",
-            addBtnId = "btnAddNewUser"
-        };
-
-        await JS.InvokeVoidAsync("initGenericDataTable", $"#{tableId}", config);
-        dataTableInitialized = true;
-        
-        await RefreshData();
+        showColumnMenu = false;
+        StateHasChanged();
     }
 
-    private async Task RefreshDataTable()
+    // Server-side data loading
+    private async Task<GridData<UsUserViewModel>> LoadServerData(GridState<UsUserViewModel> state)
     {
-        if (dataTableInitialized)
+        isLoading = true;
+        try
         {
-            await JS.InvokeVoidAsync("updateGenericDataTableData", $"#{tableId}", paginatedUsers);
+            var request = new PaginatedRequest
+            {
+                PageNumber = state.Page + 1, // MudBlazor uses 0-based index
+                PageSize = state.PageSize,
+                SearchTerm = _searchString,
+                SortColumn = state.SortDefinitions.FirstOrDefault()?.SortBy ?? string.Empty,
+                SortDirection = state.SortDefinitions.FirstOrDefault()?.Descending == true ? "desc" : "asc"
+            };
+
+            var response = await UserService.GetPaginatedUsersAsync(request);
+
+            return new GridData<UsUserViewModel>
+            {
+                Items = response.Items,
+                TotalItems = response.TotalRecords
+            };
+        }
+        catch (Exception ex)
+        {
+            await ShowNotification("error", $"Lỗi tải dữ liệu: {ex.Message}");
+            return new GridData<UsUserViewModel> { Items = new List<UsUserViewModel>(), TotalItems = 0 };
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSearch()
+    {
+        if (dataGrid != null)
+        {
+            await dataGrid.ReloadServerData();
         }
     }
 
     private async Task RefreshData()
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        try 
+        if (dataGrid != null)
         {
-            paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
-            sw.Stop();
-            
-            await RefreshDataTable();
-            StateHasChanged();
-
-            // IMPROVED: Gọi forceAdjust thay vì adjust đơn
-            await Task.Delay(100); // Đợi DOM render xong
-            await JS.InvokeVoidAsync("eval", $@"
-                if(window.dataTableInstances['#{tableId}'] && window.dataTableInstances['#{tableId}'].forceAdjust) {{
-                    window.dataTableInstances['#{tableId}'].forceAdjust();
-                }}
-            ");
+            await dataGrid.ReloadServerData();
         }
-        catch (Exception ex)
-        {
-            // Console.WriteLine($"Error refreshing data: {ex.Message}");
-        }
-    }
-
-    private async Task ChangePage(int pageNumber)
-    {
-        paginationRequest.PageNumber = pageNumber;
-        await RefreshData();
-    }
-
-    [JSInvokable("ChangePageSize")]
-    public async Task ChangePageSize(int pageSize)
-    {
-        paginationRequest.PageSize = pageSize;
-        paginationRequest.PageNumber = 1;
-        await RefreshData();
-    }
-
-    [JSInvokable("SearchUsers")]
-    public async Task SearchUsers(string term)
-    {
-        // Khi search, reset về trang 1
-        paginationRequest.SearchTerm = term;
-        paginationRequest.PageNumber = 1;
-        
-        await RefreshData();
-    }
-
-    public class TableColumnConfig
-    {
-        public string Property { get; set; } = "";
-        public string DisplayName { get; set; } = "";
-        public string? Width { get; set; }
-    }
-
-    
-
-    // Load data với pagination
-    private async Task LoadData()
-    {
-        paginatedUsers = await UserService.GetPaginatedUsersAsync(paginationRequest);
     }
 
     private async Task LoadGroups()
     {
-        // Không cần load trước 50k nhóm nữa, MudAutocomplete sẽ tự search server-side
-        await Task.CompletedTask;
+        try
+        {
+            allGroups = (await UserService.GetAllGroupsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            await ShowNotification("error", $"Lỗi tải nhóm: {ex.Message}");
+        }
     }
 
     #region Modal Operations
-    // Hàm này được gọi từ JS var addBtnHtml
-    [JSInvokable("OpenAddModal")]
-    public async Task OpenAddModal()
+
+    private async Task OpenAddModal()
     {
         isEditMode = false;
-        await LoadGroups(); // Nạp groups lười khi mở modal
+        await LoadGroups();
         usUserFormModel = new UsUserFormModel { RowStatus = 1, ChangePassword = false };
         password = string.Empty;
         confirmPassword = string.Empty;
@@ -326,67 +472,56 @@
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
     }
 
-  
-    // Xử lý sự kiện mở modal sửa từ JS (DataTable) bằng userId, hàm này được gọi từ JS ở phần $row.find('.btn-edit-user') 
-    [JSInvokable("OpenEditModalById")]
-    public async Task OpenEditModalById(string userId)
+    private async Task OpenEditModal(string userId)
     {
-        var user = await UserService.GetUserByIdAsync(userId);
-        if (user != null)
+        try
         {
-            isEditMode = true;
-            await LoadGroups(); // Nạp groups lười khi mở modal
-            usUserFormModel = new UsUserFormModel
+            var user = await UserService.GetUserByIdAsync(userId);
+            if (user != null)
             {
-                Id = user.Id,
-                Name = user.Name,
-                UserName = user.UserName,
-                GroupId = user.GroupId,
-                Email = user.Email,
-                Phone = user.Phone,
-                Gender = user.Gender,
-                CMND = user.CMND,
-                Address = user.Address,
-                Image = user.Image,
-                Note = user.Note,
-                RowStatus = user.RowStatus,
-                ChangePassword = false // Mặc định không đổi password
-            };
-            password = string.Empty;
-            confirmPassword = string.Empty;
-            StateHasChanged();
-            await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
+                isEditMode = true;
+                await LoadGroups();
+                usUserFormModel = new UsUserFormModel
+                {
+                    Id = user.Id,
+                    Name = user.Name,
+                    UserName = user.UserName,
+                    GroupId = user.GroupId,
+                    Email = user.Email,
+                    Phone = user.Phone,
+                    Gender = user.Gender,
+                    CMND = user.CMND,
+                    Address = user.Address,
+                    Image = user.Image,
+                    Note = user.Note,
+                    RowStatus = user.RowStatus,
+                    ChangePassword = false
+                };
+                password = string.Empty;
+                confirmPassword = string.Empty;
+                StateHasChanged();
+                await JS.InvokeVoidAsync("eval", "$('#userModal').modal('show')");
+            }
         }
-    }
-
-    // Xử lý sự kiện mở modal xóa từ JS (DataTable) bằng userId, hàm này được gọi từ JS ở phần $row.find('.btn-delete-user')
-    [JSInvokable("OpenDeleteModalById")]
-    public async Task OpenDeleteModalById(string userId)
-    {
-        var user = paginatedUsers.Items.FirstOrDefault(u => u.Id == userId);
-        if (user != null)
+        catch (Exception ex)
         {
-            deleteUserId = user.Id;
-            deleteUserName = user.Name;
-            isDeleteModalVisible = true;
-            StateHasChanged();
+            await ShowNotification("error", $"Lỗi: {ex.Message}");
         }
     }
 
-
+    private void ConfirmAndDelete(UsUserViewModel user)
+    {
+        userToDelete = user;
+        deleteConfirmDialog?.Show($"Bạn có chắc chắn muốn xóa người dùng '{user.Name}' không?");
+    }
 
     private async Task CloseModals()
     {
         await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
-        
         usUserFormModel = new UsUserFormModel();
         password = string.Empty;
         confirmPassword = string.Empty;
-        deleteUserId = string.Empty;
-        deleteUserName = string.Empty;
-        isDeleteModalVisible = false;
         isProcessing = false;
-
         StateHasChanged();
     }
 
@@ -396,10 +531,9 @@
 
     private async Task HandleSaveUser()
     {
-        if (isProcessing || isDataOperationInProgress) return;
+        if (isProcessing) return;
 
         isProcessing = true;
-        isDataOperationInProgress = true;
         StateHasChanged();
 
         try
@@ -425,7 +559,6 @@
 
             if (!isEditMode)
             {
-                // Validation cho password khi tạo mới
                 if (string.IsNullOrWhiteSpace(password))
                 {
                     await ShowNotification("error", MessageConstant.PASSWORD_NOT_NULL);
@@ -438,7 +571,6 @@
                     return;
                 }
 
-                // CREATE
                 var createRequest = new UsUserCreateModel
                 {
                     Name = usUserFormModel.Name,
@@ -458,29 +590,16 @@
 
                 if (newUser != null)
                 {
-                    // Đóng modal trước
-                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
-
-                    // Reset form
-                    usUserFormModel = new UsUserFormModel();
-                    password = string.Empty;
-                    confirmPassword = string.Empty;
-
+                    await CloseModals();
                     await ShowNotification("success", $"Thêm người dùng '{newUser.Name}' thành công!");
-
-                    if (dataTableInitialized)
-                    {
-                        // await RefreshDataTable();
-                        await RefreshData();
-                        await JS.InvokeVoidAsync("addUserRowSmooth", $"#{tableId}", newUser.Id);
-                    }
+                    await RefreshData();
                     
-                    StateHasChanged();
+                    // Highlight row vừa thêm
+                    await HighlightRow(newUser.Id, "row-highlight-success");
                 }
             }
             else
             {
-                // UPDATE
                 var updateRequest = new UsUserUpdateModel
                 {
                     Id = usUserFormModel.Id,
@@ -498,7 +617,6 @@
                     Password = usUserFormModel.ChangePassword ? password : null
                 };
 
-                // Validation cho password nếu chọn đổi
                 if (updateRequest.IsChangePassword == true)
                 {
                     if (string.IsNullOrWhiteSpace(password))
@@ -518,106 +636,58 @@
 
                 if (updatedUser != null)
                 {
-                    // Đóng modal trước
-                    await JS.InvokeVoidAsync("eval", "$('#userModal').modal('hide')");
-
-                    // Lưu userId để dùng cho animation
-                    var updatedUserId = usUserFormModel.Id;
-                    
-                    // Reset form
-                    usUserFormModel = new UsUserFormModel();
-                    password = string.Empty;
-                    confirmPassword = string.Empty;
-
+                    await CloseModals();
                     await ShowNotification("success", $"Cập nhật người dùng '{updatedUser.Name}' thành công!");
-
-                    if (dataTableInitialized)
-                    {
-                        // await RefreshDataTable();
-                        await RefreshData();
-                        await JS.InvokeVoidAsync("updateUserRowSmooth", $"#{tableId}", updatedUserId);
-                    }
+                    await RefreshData();
                     
-                    StateHasChanged();
+                    // Highlight row vừa cập nhật
+                    await HighlightRow(updatedUser.Id, "row-highlight-success");
                 }
             }
         }
         catch (Exception ex)
         {
-            await ShowNotification("error", $"Lỗi : {ex.Message}");
+            await ShowNotification("error", $"Lỗi: {ex.Message}");
         }
         finally
         {
             isProcessing = false;
-            isDataOperationInProgress = false;
             StateHasChanged();
         }
     }
 
     private async Task HandleDeleteUser()
     {
-        if (string.IsNullOrEmpty(deleteUserId) || isProcessing || isDataOperationInProgress) return;
+        if (userToDelete == null || isProcessing) return;
 
         isProcessing = true;
-        isDataOperationInProgress = true;
-
-        var idToDelete = deleteUserId;
-        var nameToDelete = deleteUserName;
+        StateHasChanged();
 
         try
         {
-            // Hiệu ứng xóa row TRƯỚC khi xóa thật
-            if (dataTableInitialized)
-            {
-                await JS.InvokeVoidAsync("deleteUserRowSmooth", $"#{tableId}", idToDelete);
-            }
-            await Task.Delay(400); // Giảm xuống cho animation delete
+            // Highlight row trước khi xóa
+            await HighlightRow(userToDelete.Id, "row-highlight-delete", 800);
 
-            // Ẩn modal trước bằng state
-            isDeleteModalVisible = false;
-            StateHasChanged();
-
-            // Reset state
-            deleteUserId = string.Empty;
-            deleteUserName = string.Empty;
-
-            // Gọi API xóa
-            var result = await UserService.DeleteUserAsync(idToDelete);
+            var result = await UserService.DeleteUserAsync(userToDelete.Id);
 
             if (result)
             {
-                await ShowNotification("success", $"Xóa người dùng '{nameToDelete}' thành công!");
-                
-                if (dataTableInitialized)
-                {
-                    await RefreshData();
-                    // await RefreshDataTable();
-                }
-                
-                StateHasChanged();
+                await ShowNotification("success", $"Xóa người dùng '{userToDelete.Name}' thành công!");
+                await RefreshData();
             }
             else
             {
                 await ShowNotification("error", "Không thể xóa người dùng này!");
-                if (dataTableInitialized)
-                {
-                    await RefreshDataTable();
-                }
             }
         }
         catch (Exception ex)
         {
             await ShowNotification("error", $"Lỗi khi xóa: {ex.Message}");
-                if (dataTableInitialized)
-                {
-                    // await RefreshDataTable();
-                await RefreshData();
-                }
         }
         finally
         {
+            userToDelete = null;
             isProcessing = false;
-            isDataOperationInProgress = false;
             StateHasChanged();
         }
     }
@@ -648,18 +718,9 @@
         }
         catch (Exception ex)
         {
-            // Console.WriteLine($"Notification error: {ex.Message}");
+            Console.WriteLine($"Notification error: {ex.Message}");
         }
     }
 
     #endregion
-
-    public void Dispose()
-    {
-        objRef?.Dispose();
-        if (dataTableInitialized)
-        {
-            _ = JS.InvokeVoidAsync("destroyUserDataTable", $"#{tableId}");
-        }
-    }
 }
